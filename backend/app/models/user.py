@@ -24,6 +24,7 @@ class User(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     firm_id = Column(UUID(as_uuid=True), ForeignKey("firms.id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), nullable=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(SAEnum(UserRole), default=UserRole.employee, nullable=False)
@@ -31,6 +32,7 @@ class User(Base, TimestampMixin):
 
     # Relationships
     firm = relationship("Firm", back_populates="users")
+    client_org = relationship("Client", foreign_keys=[client_id])
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     assigned_tasks = relationship("Task", back_populates="assignee", foreign_keys="Task.assigned_to")
@@ -38,3 +40,4 @@ class User(Base, TimestampMixin):
     assigned_compliance = relationship("Compliance", back_populates="assignee", foreign_keys="Compliance.assigned_to")
     uploaded_documents = relationship("Document", back_populates="uploader", foreign_keys="Document.uploaded_by")
     activity_logs = relationship("ActivityLog", back_populates="actor", foreign_keys="ActivityLog.actor_id")
+    timesheet_logs = relationship("TimesheetLog", back_populates="user", cascade="all, delete-orphan")

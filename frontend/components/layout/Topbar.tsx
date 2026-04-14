@@ -1,36 +1,34 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import styles from './Topbar.module.css'
-import { Bell, Search, ChevronDown, User, LogOut } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Bell, Search, ChevronDown, User, LogOut, Menu } from 'lucide-react'
 import { getUser, clearToken } from '@/lib/auth'
 import { notificationsApi } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 import type { Notification } from '@/types'
 
-export default function Topbar({ title }: { title?: string }) {
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+
+export default function Topbar({ title, onMenuClick }: { title?: string, onMenuClick?: () => void }) {
   const router = useRouter()
   const user = getUser()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const [showNotifs, setShowNotifs] = useState(false)
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const notifsRef = useRef<HTMLDivElement>(null)
-  const userMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     notificationsApi.list({ size: 8 }).then((res) => {
       setNotifications(res.data.items || [])
       setUnreadCount(res.data.unread_count || 0)
     }).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (notifsRef.current && !notifsRef.current.contains(e.target as Node)) setShowNotifs(false)
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setShowUserMenu(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   const handleLogout = () => { clearToken(); router.replace('/login') }
@@ -40,78 +38,95 @@ export default function Topbar({ title }: { title?: string }) {
     : user?.email?.[0]?.toUpperCase() || 'U'
 
   return (
-    <header className={styles.topbar}>
-      <div className={styles.left}>
-        {title && <h1 className={styles.title}>{title}</h1>}
-      </div>
-
-      <div className={styles.right}>
-        {/* Notifications */}
-        <div className={styles.iconWrapper} ref={notifsRef}>
-          <button
-            className={styles.iconBtn}
-            onClick={() => setShowNotifs(!showNotifs)}
-            id="notifications-btn"
-          >
-            <Bell size={18} />
-            {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
-          </button>
-
-          {showNotifs && (
-            <div className={styles.dropdown} style={{ width: 340 }}>
-              <div className={styles.dropdownHeader}>
-                <span className={styles.dropdownTitle}>Notifications</span>
-                {unreadCount > 0 && (
-                  <button className={styles.markAll} onClick={() => {
-                    notificationsApi.markAllRead()
-                    setNotifications(n => n.map(x => ({ ...x, is_read: true })))
-                    setUnreadCount(0)
-                  }}>Mark all read</button>
-                )}
-              </div>
-              {notifications.length === 0 ? (
-                <div className={styles.empty}>No notifications</div>
-              ) : (
-                notifications.map((n) => (
-                  <div key={n.id} className={`${styles.notifItem} ${!n.is_read ? styles.unread : ''}`}>
-                    <div className={styles.notifDot} style={{ background: n.type === 'warning' ? 'var(--warning)' : n.type === 'reminder' ? 'var(--accent)' : 'var(--info)' }} />
-                    <div>
-                      <div className={styles.notifTitle}>{n.title}</div>
-                      {n.message && <div className={styles.notifMsg}>{n.message}</div>}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-12 items-center px-4 md:px-6 justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+          {title && <h1 className="text-lg font-semibold tracking-tight">{title}</h1>}
         </div>
 
-        {/* User menu */}
-        <div className={styles.iconWrapper} ref={userMenuRef}>
-          <button
-            className={styles.userBtn}
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            id="user-menu-btn"
-          >
-            <div className="avatar">{initials}</div>
-            <div className={styles.userInfo}>
-              <span className={styles.userName}>{user?.profile?.name || user?.email}</span>
-              <span className={styles.userRole}>{user?.role?.replace('_', ' ')}</span>
-            </div>
-            <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
-          </button>
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Notifications Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
+                    {unreadCount}
+                  </Badge>
+                )}
+                <span className="sr-only">Notifications</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <div className="flex items-center justify-between px-4 py-2 border-b">
+                <span className="text-sm font-semibold">Notifications</span>
+                {unreadCount > 0 && (
+                  <Button variant="ghost" className="h-auto p-0 text-xs text-muted-foreground hover:text-primary" onClick={(e) => {
+                    e.preventDefault();
+                    notificationsApi.markAllRead();
+                    setNotifications(n => n.map(x => ({ ...x, is_read: true })));
+                    setUnreadCount(0);
+                  }}>
+                    Mark all read
+                  </Button>
+                )}
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n.id} className={`flex items-start gap-4 p-4 border-b last:border-b-0 transition-colors hover:bg-muted/50 ${!n.is_read ? 'bg-muted/20' : ''}`}>
+                      <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${n.type === 'warning' ? 'bg-warning' : n.type === 'reminder' ? 'bg-accent' : 'bg-primary'}`} />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium leading-none">{n.title}</span>
+                        {n.message && <span className="text-sm text-muted-foreground">{n.message}</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {showUserMenu && (
-            <div className={styles.dropdown} style={{ right: 0, width: 200 }}>
-              <button className={styles.menuItem} onClick={() => { router.push('/settings'); setShowUserMenu(false) }}>
-                <User size={14} /> Profile & Settings
-              </button>
-              <div className={styles.divider} />
-              <button className={styles.menuItem} style={{ color: 'var(--danger)' }} onClick={handleLogout}>
-                <LogOut size={14} /> Sign out
-              </button>
-            </div>
-          )}
+          {/* User Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2 h-9 px-2 md:px-3">
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="hidden md:flex flex-col items-start leading-none">
+                  <span className="text-sm font-medium">{user?.profile?.name || user?.email}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.profile?.name || 'User'}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  <p className="text-xs leading-none text-muted-foreground capitalize mt-1 border border-border inline-block px-1 w-max rounded-sm">{user?.role?.replace('_', ' ')}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/settings')} className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile & Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

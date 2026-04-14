@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, Date, Text, Enum as SAEnum
+from sqlalchemy import Column, String, ForeignKey, Date, Integer, Boolean, Text, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.base import Base, TimestampMixin
@@ -39,3 +39,29 @@ class Task(Base, TimestampMixin):
     client = relationship("Client", back_populates="tasks")
     assignee = relationship("User", back_populates="assigned_tasks", foreign_keys=[assigned_to])
     creator = relationship("User", back_populates="created_tasks", foreign_keys=[created_by])
+    recurring_config = relationship("RecurringTaskConfig", back_populates="task", uselist=False)
+    timesheet_logs = relationship("TimesheetLog", back_populates="task", cascade="all, delete-orphan")
+
+class RecurringFrequency(str, enum.Enum):
+    daily = "daily"
+    weekly = "weekly"
+    monthly = "monthly"
+    yearly = "yearly"
+
+class RecurringTaskConfig(Base, TimestampMixin):
+    __tablename__ = "recurring_task_configs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # The parent template task
+    task_id = Column(UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, unique=True)
+    frequency = Column(SAEnum(RecurringFrequency), nullable=False)
+    
+    # Specifics on when to trigger
+    interval = Column(Integer, default=1) # e.g. every 1 month
+    creation_day = Column(Integer, nullable=True) # e.g. on the 5th of the month
+    due_days_after_creation = Column(Integer, default=7) # Deadline offset from creation
+    
+    is_active = Column(Boolean, default=True)
+    last_generated_at = Column(Date, nullable=True)
+
+    task = relationship("Task", back_populates="recurring_config")

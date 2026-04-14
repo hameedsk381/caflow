@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.db.database import get_db
 from app.models.document import Document
-from app.models.user import User
-from app.core.dependencies import get_current_staff
+from app.models.user import User, UserRole
+from app.core.dependencies import get_current_user, get_current_staff
 from app.core.config import settings
 import uuid
 import os
@@ -25,6 +25,7 @@ class DocumentResponse(BaseModel):
     file_type: Optional[str] = None
     file_size: Optional[int] = None
     category: Optional[str] = None
+    is_client_visible: bool
     uploaded_by: Optional[uuid.UUID] = None
     created_at: datetime
 
@@ -35,12 +36,25 @@ async def list_documents(
     size: int = Query(20, ge=1, le=100),
     client_id: uuid.UUID = Query(None),
     category: str = Query(None),
-    current_user: User = Depends(get_current_staff),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Document).where(Document.firm_id == current_user.firm_id)
-    if client_id:
-        query = query.where(Document.client_id == client_id)
+    
+    # Client Portal Enforcement
+    if current_user.role == UserRole.client: # client_user equivalent
+        if not current_user.client_id:
+            return {"items": [], "total": 0, "page": page, "size": size}
+            
+        query = query.where(
+            Document.client_id == current_user.client_id,
+            Document.is_client_visible == True
+        )
+    else:
+        # Standard Staff Filters
+        if client_id:
+            query = query.where(Document.client_id == client_id)
+
     if category:
         query = query.where(Document.category == category)
 
@@ -58,9 +72,16 @@ async def upload_document(
     file: UploadFile = File(...),
     client_id: Optional[str] = Form(None),
     category: Optional[str] = Form(None),
-    current_user: User = Depends(get_current_staff),
+    is_client_visible: bool = Form(False),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if current_user.role == UserRole.client:
+        if not current_user.client_id:
+            raise HTTPException(status_code=403, detail="Unlinked Client Account")
+        # Clients can upload directly to their own profile
+        client_id = str(current_user.client_id)
+        is_client_visible = True
     # For local development, save to /uploads directory
     # In production, upload to S3
     upload_dir = "uploads"
@@ -84,6 +105,7 @@ async def upload_document(
         file_type=file.content_type,
         file_size=len(content),
         category=category,
+        is_client_visible=is_client_visible,
         uploaded_by=current_user.id,
     )
     db.add(doc)

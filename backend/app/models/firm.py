@@ -21,3 +21,7 @@ class Firm(Base, TimestampMixin):
     documents = relationship("Document", back_populates="firm", cascade="all, delete-orphan")
     invoices = relationship("Invoice", back_populates="firm", cascade="all, delete-orphan")
     activity_logs = relationship("ActivityLog", back_populates="firm", cascade="all, delete-orphan")
+    notification_rules = relationship("NotificationRule", back_populates="firm", cascade="all, delete-orphan")
+    credentials = relationship("EncryptedCredential", back_populates="firm", cascade="all, delete-orphan")
+    dsc_tokens = relationship("DSCToken", back_populates="firm", cascade="all, delete-orphan")
+    timesheet_logs = relationship("TimesheetLog", back_populates="firm", cascade="all, delete-orphan")

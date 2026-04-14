@@ -1,14 +1,14 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isAuthenticated, getUser, setUser } from '@/lib/auth'
 import { authApi } from '@/lib/api'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
-import styles from './layout.module.css'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -26,13 +26,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!isAuthenticated()) return null
 
   return (
-    <div className={styles.layout}>
-      <Sidebar />
-      <div className={styles.main}>
-        <Topbar />
-        <div className={styles.content}>
-          {children}
-        </div>
+    <div className="flex min-h-screen bg-background">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      {/* Mobile Backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden animate-in fade-in transition-opacity"
+          onClick={() => setSidebarOpen(false)} 
+        />
+      )}
+      
+      <div className="flex-1 flex flex-col min-h-screen md:ml-64 transition-all duration-300 relative z-10 w-full overflow-hidden">
+        <Topbar title="" onMenuClick={() => setSidebarOpen(true)} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="container mx-auto p-4 max-w-[1400px]">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   )

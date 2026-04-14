@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     SECRET_KEY: str = "changethis-in-production-must-be-32-chars-minimum"
+    FERNET_SECRET: str = "P8r3c5kG9P_5a7qR1jF9s6dH3mY6bV8pS4eX2wH1bTQ=" # Fallback testing key (generate via cryptography.fernet import Fernet; Fernet.generate_key().decode())
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

@@ -6,11 +6,14 @@ import {
   Users, ShieldCheck, AlertCircle, CheckSquare,
   TrendingUp, FileText, Clock, Activity
 } from 'lucide-react'
-import { format, differenceInDays } from 'date-fns'
+import { format } from 'date-fns'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -46,169 +49,200 @@ export default function DashboardPage() {
   }))
 
   if (loading) return (
-    <div className="loading-screen" style={{ minHeight: 'auto', padding: 80 }}>
-      <div className="spinner" /><span className="text-muted">Loading dashboard…</span>
+    <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
+      <span className="text-muted-foreground text-sm">Loading dashboard…</span>
     </div>
   )
 
   return (
-    <div>
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Welcome back! Here's what's happening at your firm.</p>
-        </div>
+    <div className="space-y-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-[28px] md:text-[40px] font-semibold tracking-vercel-display text-foreground leading-[1.20]">Dashboard</h1>
+        <p className="text-muted-foreground text-[14px] md:text-[16px]">Welcome back! Here's what's happening at your firm.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="stats-grid">
-        <StatCard icon={<Users size={20} />} label="Total Clients" value={stats?.total_clients || 0} color="#6366f1" />
-        <StatCard icon={<Users size={20} />} label="Total Leads" value={stats?.total_leads || 0} color="#3b82f6" />
-        <StatCard icon={<ShieldCheck size={20} />} label="Pending Compliance" value={stats?.pending_compliance || 0} color="#f59e0b" />
-        <StatCard icon={<AlertCircle size={20} />} label="Overdue Items" value={stats?.overdue_compliance || 0} color="#ef4444" />
-        <StatCard icon={<AlertCircle size={20} />} label="Overdue Notices" value={stats?.overdue_notices || 0} color="#dc2626" />
-        <StatCard icon={<CheckSquare size={20} />} label="Open Tasks" value={stats?.open_tasks || 0} color="#3b82f6" />
-        <StatCard icon={<CheckSquare size={20} />} label="Active Services" value={stats?.active_services || 0} color="#10b981" />
-        <StatCard icon={<TrendingUp size={20} />} label="Revenue Collected" value={`₹${((stats?.total_revenue || 0) / 1000).toFixed(0)}K`} color="#10b981" isText />
-        <StatCard icon={<FileText size={20} />} label="Pending Invoices" value={stats?.pending_invoices || 0} color="#8b5cf6" />
-        <StatCard icon={<FileText size={20} />} label="Total Registers" value={stats?.total_registers || 0} color="#6366f1" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+        <StatCard icon={<Users className="text-indigo-500" />} label="Total Clients" value={stats?.total_clients || 0} />
+        <StatCard icon={<Users className="text-blue-500" />} label="Total Leads" value={stats?.total_leads || 0} />
+        <StatCard icon={<ShieldCheck className="text-amber-500" />} label="Pending Compliance" value={stats?.pending_compliance || 0} />
+        <StatCard icon={<AlertCircle className="text-red-500" />} label="Overdue Items" value={stats?.overdue_compliance || 0} />
+        <StatCard icon={<CheckSquare className="text-blue-500" />} label="Open Tasks" value={stats?.open_tasks || 0} />
+        <StatCard icon={<CheckSquare className="text-emerald-500" />} label="Active Services" value={stats?.active_services || 0} />
+        <StatCard icon={<TrendingUp className="text-emerald-500" />} label="Revenue Collected" value={`₹${((stats?.total_revenue || 0) / 1000).toFixed(0)}K`} isText />
+        <StatCard icon={<FileText className="text-purple-500" />} label="Pending Invoices" value={stats?.pending_invoices || 0} />
       </div>
 
       {/* Charts Row */}
-      <div className="flex gap-6" style={{ marginBottom: 28 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Compliance Pie */}
-        <div className="card" style={{ flex: '0 0 300px' }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}>Compliance Status</h3>
+        <Card className="col-span-1">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Compliance Status</CardTitle>
+          </CardHeader>
+          <CardContent>
           {pieData.reduce((a, b) => a + b.value, 0) > 0 ? (
-            <div>
+            <div className="space-y-4">
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={3}>
                     {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: '#101e35', border: '1px solid #1a2d4a', borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
+              <div className="flex flex-wrap gap-3 mt-4">
                 {pieData.map((d) => (
-                  <div key={d.name} className="flex items-center gap-1" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                    <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color }} />
+                  <div key={d.name} className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                    <div style={{ background: d.color }} className="w-2 h-2 rounded-sm" />
                     <span>{d.name} ({d.value})</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="empty-state" style={{ padding: 24 }}><p>No compliance data yet</p></div>
+            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">No compliance data</div>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Upcoming deadlines bar chart */}
-        <div className="card" style={{ flex: 1 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}>Upcoming Deadlines (days)</h3>
+        <Card className="col-span-1 md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Upcoming Deadlines (days)</CardTitle>
+          </CardHeader>
+          <CardContent>
           {barData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={barData} margin={{ top: 0, right: 10, left: -20, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} angle={-30} textAnchor="end" />
-                <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
-                <Tooltip contentStyle={{ background: '#101e35', border: '1px solid #1a2d4a', borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="days" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                <Bar dataKey="days" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="empty-state" style={{ padding: 24 }}><p>No upcoming deadlines</p></div>
+             <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">No upcoming deadlines</div>
           )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Bottom Row */}
-      <div className="flex gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming Deadlines Table */}
-        <div className="card" style={{ flex: 1 }}>
-          <div className="flex items-center gap-2" style={{ marginBottom: 16 }}>
-            <Clock size={16} style={{ color: 'var(--warning)' }} />
-            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Upcoming Deadlines</h3>
-          </div>
+        <Card className="col-span-1 lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-500" />
+              <CardTitle className="text-base font-semibold">Upcoming Deadlines</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
           {deadlines.length === 0 ? (
-            <div className="empty-state"><p>No upcoming deadlines in next 30 days</p></div>
+            <div className="text-sm text-muted-foreground p-8 text-center rounded-md shadow-vercel border-dashed border-border border">No upcoming deadlines in next 30 days</div>
           ) : (
-            <div className="table-wrapper" style={{ border: 'none' }}>
-              <table>
-                <thead><tr>
-                  <th>Client</th><th>Type</th><th>Period</th><th>Due Date</th><th>Days Left</th><th>Status</th>
-                </tr></thead>
-                <tbody>
+            <div className="rounded-lg shadow-vercel overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Days Left</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {deadlines.map((d: any) => (
-                    <tr key={d.id}>
-                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{d.client_name}</td>
-                      <td><span className="badge badge-accent">{d.type}</span></td>
-                      <td>{d.period || '—'}</td>
-                      <td>{format(new Date(d.due_date), 'dd MMM yyyy')}</td>
-                      <td>
-                        <span style={{ color: d.days_remaining <= 3 ? 'var(--danger)' : d.days_remaining <= 7 ? 'var(--warning)' : 'var(--success)', fontWeight: 600 }}>
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.client_name}</TableCell>
+                      <TableCell><Badge variant="secondary" className="font-medium text-xs">{d.type}</Badge></TableCell>
+                      <TableCell className="text-muted-foreground">{d.period || '—'}</TableCell>
+                      <TableCell>{format(new Date(d.due_date), 'dd MMM yyyy')}</TableCell>
+                      <TableCell>
+                        <span className={`font-semibold ${d.days_remaining <= 3 ? 'text-red-500' : d.days_remaining <= 7 ? 'text-amber-500' : 'text-emerald-500'}`}>
                           {d.days_remaining}d
                         </span>
-                      </td>
-                      <td><StatusBadge status={d.status} /></td>
-                    </tr>
+                      </TableCell>
+                      <TableCell><StatusBadge status={d.status} /></TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Recent Activity */}
-        <div className="card" style={{ flex: '0 0 320px' }}>
-          <div className="flex items-center gap-2" style={{ marginBottom: 16 }}>
-            <Activity size={16} style={{ color: 'var(--accent-light)' }} />
-            <h3 style={{ fontSize: 15, fontWeight: 700 }}>Recent Activity</h3>
-          </div>
+        <Card className="col-span-1">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" />
+              <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
           {activity.length === 0 ? (
-            <div className="empty-state"><p>No recent activity</p></div>
+            <div className="text-sm text-muted-foreground">No recent activity</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <div className="space-y-4">
               {activity.map((a: any) => (
-                <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Activity size={13} style={{ color: 'var(--accent-light)' }} />
+                <div key={a.id} className="flex items-start gap-4 pb-4 border-b last:border-b-0 last:pb-0">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                    <Activity className="h-4 w-4 text-primary" />
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-                      <span style={{ color: 'var(--accent-light)' }}>{a.actor_name}</span> {a.action} {a.entity_type}
-                    </div>
-                    {a.entity_name && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{a.entity_name}</div>}
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      <span className="text-primary">{a.actor_name}</span> {a.action} {a.entity_type}
+                    </p>
+                    {a.entity_name && (
+                      <p className="text-xs text-muted-foreground">{a.entity_name}</p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground">
                       {format(new Date(a.created_at), 'dd MMM, h:mm a')}
-                    </div>
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
 }
 
-function StatCard({ icon, label, value, color, isText }: any) {
+function StatCard({ icon, label, value, isText }: any) {
   return (
-    <div className="stat-card">
-      <div className="stat-card-icon" style={{ background: color + '18' }}>
-        <span style={{ color }}>{icon}</span>
-      </div>
-      <div className="stat-card-value">{isText ? value : value.toLocaleString()}</div>
-      <div className="stat-card-label">{label}</div>
-    </div>
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+            {icon}
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-semibold text-[28px] md:text-[32px] tracking-vercel-section leading-none">{isText ? value : value.toLocaleString()}</h3>
+            <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    pending: 'badge-warning', in_progress: 'badge-info',
-    filed: 'badge-success', overdue: 'badge-danger'
+  const map: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    pending: 'secondary',
+    in_progress: 'default',
+    filed: 'outline',
+    overdue: 'destructive'
   }
-  return <span className={`badge ${map[status] || 'badge-neutral'}`}>{status?.replace('_', ' ')}</span>
+  
+  return <Badge variant={map[status] || 'secondary'} className="capitalize">{status?.replace('_', ' ')}</Badge>
 }

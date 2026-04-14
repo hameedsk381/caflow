@@ -81,42 +81,42 @@ export default function DocumentsPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
         <div>
-          <h1 className="page-title">Documents</h1>
-          <p className="page-subtitle">{total} file{total !== 1 ? 's' : ''} stored</p>
+          <h1 className="text-[28px] md:text-[40px] font-semibold tracking-vercel-display leading-[1.20]">Documents</h1>
+          <p className="text-muted-foreground mt-2">{total} file{total !== 1 ? 's' : ''} stored</p>
         </div>
-        <button id="upload-doc-btn" className="btn btn-primary" onClick={() => setUploadModal(true)}>
+        <button id="upload-doc-btn" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" onClick={() => setUploadModal(true)}>
           <Upload size={15} /> Upload Document
         </button>
       </div>
 
-      <div className="filter-row">
-        <select className="form-input" style={{ width: 'auto' }} value={filterClient} onChange={e => setFilterClient(e.target.value)}>
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" style={{ width: 'auto' }} value={filterClient} onChange={e => setFilterClient(e.target.value)}>
           <option value="">All Clients</option>
           {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+        <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" style={{ width: 'auto' }} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
           <option value="">All Categories</option>
           {CATEGORIES.map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
 
-      <div className="table-wrapper">
+      <div className="relative w-full overflow-auto rounded-lg shadow-vercel bg-card">
         {loading ? (
           <div className="flex items-center justify-center" style={{ padding: 48, gap: 12 }}><div className="spinner" /><span className="text-muted">Loading…</span></div>
         ) : docs.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon"><FolderOpen size={24} style={{ color: 'var(--text-muted)' }} /></div>
+          <div className="flex flex-col items-center justify-center p-12 text-center text-sm text-muted-foreground rounded-lg shadow-vercel border-dashed border border-border">
+            <div className="mb-4 h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center"><FolderOpen size={24} style={{ color: 'var(--text-muted)' }} /></div>
             <h3>No documents yet</h3><p>Upload your first document</p>
           </div>
         ) : (
-          <table>
-            <thead><tr><th>File</th><th>Category</th><th>Size</th><th>Uploaded</th><th></th></tr></thead>
+          <table className="w-full caption-bottom text-sm">
+            <thead className="border-b border-border"><tr className="border-b border-border transition-colors hover:bg-muted/50"><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">File</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Category</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Size</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Uploaded</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap"></th></tr></thead>
             <tbody>
               {docs.map(d => (
                 <tr key={d.id}>
-                  <td>
+                  <td className="p-4 align-middle whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <span style={{ fontSize: 20 }}>{getFileIcon(d.file_type)}</span>
                       <div>
@@ -125,10 +125,10 @@ export default function DocumentsPage() {
                       </div>
                     </div>
                   </td>
-                  <td>{d.category ? <span className="badge badge-neutral">{d.category}</span> : <span className="text-muted">—</span>}</td>
-                  <td>{formatBytes(d.file_size)}</td>
-                  <td>{format(new Date(d.created_at), 'dd MMM yyyy')}</td>
-                  <td>
+                  <td className="p-4 align-middle whitespace-nowrap">{d.category ? <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 bg-muted text-muted-foreground hover:bg-muted/80">{d.category}</span> : <span className="text-muted">—</span>}</td>
+                  <td className="p-4 align-middle whitespace-nowrap">{formatBytes(d.file_size)}</td>
+                  <td className="p-4 align-middle whitespace-nowrap">{format(new Date(d.created_at), 'dd MMM yyyy')}</td>
+                  <td className="p-4 align-middle whitespace-nowrap">
                     <div className="flex gap-1">
                       <a href={`${process.env.NEXT_PUBLIC_API_URL}${d.file_url}`} target="_blank" rel="noreferrer" className="btn btn-ghost btn-icon btn-sm" title="Download">
                         <Download size={14} />
@@ -146,14 +146,14 @@ export default function DocumentsPage() {
       </div>
 
       {uploadModal && (
-        <div className="modal-overlay" onClick={() => setUploadModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">Upload Document</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setUploadModal(false)}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in" onClick={() => setUploadModal(false)}>
+          <div className="bg-background rounded-lg shadow-vercel-popover max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <span className="text-lg font-semibold tracking-vercel-card">Upload Document</span>
+              <button className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 p-2 h-9 w-9 bg-transparent shadow-none hover:bg-accent hover:text-accent-foreground" onClick={() => setUploadModal(false)}>✕</button>
             </div>
             <form onSubmit={handleUpload}>
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="p-6" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   style={{ border: '2px dashed var(--border-light)', borderRadius: 'var(--radius)', padding: 32, textAlign: 'center', cursor: 'pointer', transition: 'var(--transition)', background: selectedFile ? 'var(--accent-glow)' : 'transparent' }}
@@ -166,23 +166,23 @@ export default function DocumentsPage() {
                   <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={e => setSelectedFile(e.target.files?.[0] || null)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Client (optional)</label>
-                  <select className="form-input" value={uploadForm.client_id || ''} onChange={e => setUploadForm({ ...uploadForm, client_id: e.target.value })}>
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Client (optional)</label>
+                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={uploadForm.client_id || ''} onChange={e => setUploadForm({ ...uploadForm, client_id: e.target.value })}>
                     <option value="">No client</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Category</label>
-                  <select className="form-input" value={uploadForm.category} onChange={e => setUploadForm({ ...uploadForm, category: e.target.value })}>
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Category</label>
+                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={uploadForm.category} onChange={e => setUploadForm({ ...uploadForm, category: e.target.value })}>
                     <option value="">Select category</option>
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setUploadModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={uploading || !selectedFile}>
+              <div className="flex items-center justify-end gap-2 p-6 border-t border-border bg-muted/20">
+                <button type="button" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80" onClick={() => setUploadModal(false)}>Cancel</button>
+                <button type="submit" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" disabled={uploading || !selectedFile}>
                   {uploading ? <><div className="spinner" style={{ width: 14, height: 14 }} /> Uploading…</> : <><Upload size={14} /> Upload</>}
                 </button>
               </div>

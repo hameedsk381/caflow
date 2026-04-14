@@ -6,6 +6,7 @@ from app.models.client import Client
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse, ClientListResponse
 from app.core.dependencies import get_current_user, get_current_staff
+from app.services.client_service import ClientRepository
 import uuid
 
 router = APIRouter()
@@ -20,6 +21,14 @@ async def list_clients(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
+    repo = ClientRepository(db, current_user.firm_id)
+    skip = (page - 1) * size
+    
+    filters = {}
+    if status: filters["status"] = status
+    
+    # Base repository doesn't have search via OR_, but we can just use the DB context query here for count or pass search.
+    # To properly map it, we will construct a clean list query
     query = select(Client).where(Client.firm_id == current_user.firm_id)
     if search:
         query = query.where(
@@ -36,7 +45,7 @@ async def list_clients(
     count_result = await db.execute(select(func.count()).select_from(query.subquery()))
     total = count_result.scalar()
 
-    query = query.offset((page - 1) * size).limit(size).order_by(Client.created_at.desc())
+    query = query.offset(skip).limit(size).order_by(Client.created_at.desc())
     result = await db.execute(query)
     clients = result.scalars().all()
     return ClientListResponse(items=clients, total=total, page=page, size=size)
@@ -48,10 +57,8 @@ async def create_client(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    client = Client(firm_id=current_user.firm_id, **data.model_dump())
-    db.add(client)
-    await db.commit()
-    await db.refresh(client)
+    repo = ClientRepository(db, current_user.firm_id)
+    client = await repo.create(data.model_dump())
     return client
 
 
@@ -61,10 +68,8 @@ async def get_client(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.firm_id == current_user.firm_id)
-    )
-    client = result.scalar_one_or_none()
+    repo = ClientRepository(db, current_user.firm_id)
+    client = await repo.get(client_id)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     return client
@@ -77,16 +82,12 @@ async def update_client(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.firm_id == current_user.firm_id)
-    )
-    client = result.scalar_one_or_none()
+    repo = ClientRepository(db, current_user.firm_id)
+    client = await repo.get(client_id)
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    for field, value in data.model_dump(exclude_none=True).items():
-        setattr(client, field, value)
-    await db.commit()
-    await db.refresh(client)
+    
+    client = await repo.update(client, data.model_dump(exclude_none=True))
     return client
 
 
@@ -96,11 +97,7 @@ async def delete_client(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Client).where(Client.id == client_id, Client.firm_id == current_user.firm_id)
-    )
-    client = result.scalar_one_or_none()
-    if not client:
+    repo = ClientRepository(db, current_user.firm_id)
+    deleted = await repo.delete(client_id)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Client not found")
-    await db.delete(client)
-    await db.commit()

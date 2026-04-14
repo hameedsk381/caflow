@@ -32,3 +32,6 @@ class Client(Base, TimestampMixin):
     tasks = relationship("Task", back_populates="client")
     documents = relationship("Document", back_populates="client")
     invoices = relationship("Invoice", back_populates="client", cascade="all, delete-orphan")
+    credentials = relationship("EncryptedCredential", back_populates="client", cascade="all, delete-orphan")
+    dsc_tokens = relationship("DSCToken", back_populates="client", cascade="all, delete-orphan")
+    timesheet_logs = relationship("TimesheetLog", back_populates="client", cascade="all, delete-orphan")

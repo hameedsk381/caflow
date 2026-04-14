@@ -47,20 +47,20 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="text-sm font-medium leading-none mb-2 block text-foreground">Email Address</label>
             <div style={{ position: 'relative' }}>
               <Mail size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input id="email-input" className="form-input" type="email" required
+              <input id="email-input" className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" type="email" required
                 style={{ paddingLeft: 36 }}
                 value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                 placeholder="admin@caflow.demo" />
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label className="text-sm font-medium leading-none mb-2 block text-foreground">Password</label>
             <div style={{ position: 'relative' }}>
               <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input id="password-input" className="form-input" type="password" required
+              <input id="password-input" className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" type="password" required
                 style={{ paddingLeft: 36 }}
                 value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
                 placeholder="••••••••" />

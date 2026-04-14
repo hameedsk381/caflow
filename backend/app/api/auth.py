@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.database import get_db
@@ -13,14 +13,19 @@ from app.core.security import (
     verify_password, get_password_hash,
     create_access_token, create_refresh_token, decode_token
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, security
+from fastapi.security import HTTPAuthorizationCredentials
+from app.core.cache import redis_client
+from app.core.limit import limiter
+from app.workers.tasks import send_welcome_email
 import uuid
 
 router = APIRouter()
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
-async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register(request: Request, data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     # Check if email exists
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
@@ -48,6 +53,10 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     token_data = {"sub": str(user.id), "firm_id": str(firm.id), "role": user.role}
+
+    # Asynchronously dispatch welcome email via Celery worker
+    send_welcome_email.delay(email=data.email, name=data.name)
+
     return TokenResponse(
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
@@ -55,7 +64,8 @@ async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
     if not user or not verify_password(data.password, user.password_hash):
@@ -135,6 +145,7 @@ async def update_profile(
 async def change_password(
     data: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
 ):
     if not verify_password(data.current_password, current_user.password_hash):
@@ -143,4 +154,23 @@ async def change_password(
     user = result.scalar_one()
     user.password_hash = get_password_hash(data.new_password)
     await db.commit()
+
+    token = credentials.credentials
+    payload = decode_token(token)
+    if payload and "jti" in payload:
+        jti = payload["jti"]
+        await redis_client.setex(f"blacklist_{jti}", 86400, "revoked")
+
     return {"message": "Password changed successfully"}
+
+@router.post("/logout")
+async def logout(
+    current_user: User = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+    payload = decode_token(token)
+    if payload and "jti" in payload:
+        jti = payload["jti"]
+        await redis_client.setex(f"blacklist_{jti}", 86400, "revoked")
+    return {"message": "Successfully logged out"}

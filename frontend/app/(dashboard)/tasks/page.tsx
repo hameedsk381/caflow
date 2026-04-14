@@ -79,13 +79,13 @@ export default function TasksPage() {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
         <div>
-          <h1 className="page-title">Tasks</h1>
-          <p className="page-subtitle">{total} task{total !== 1 ? 's' : ''}</p>
+          <h1 className="text-[28px] md:text-[40px] font-semibold tracking-vercel-display leading-[1.20]">Tasks</h1>
+          <p className="text-muted-foreground mt-2">{total} task{total !== 1 ? 's' : ''}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ display: 'flex', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+        <div className="flex gap-2">
+          <div className="flex bg-card rounded-md shadow-vercel overflow-hidden">
             {(['list', 'kanban'] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
                 style={{ padding: '7px 14px', fontSize: 12, fontWeight: 600, background: view === v ? 'var(--accent)' : 'transparent', color: view === v ? '#fff' : 'var(--text-muted)', border: 'none', cursor: 'pointer', transition: 'var(--transition)' }}>
@@ -93,45 +93,45 @@ export default function TasksPage() {
               </button>
             ))}
           </div>
-          <button className="btn btn-primary" onClick={openCreate} id="add-task-btn"><Plus size={15} /> Add Task</button>
+          <button className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" onClick={openCreate} id="add-task-btn"><Plus size={15} /> Add Task</button>
         </div>
       </div>
 
-      <div className="filter-row">
-        <select className="form-input" style={{ width: 'auto' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" className="w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option value="">All Status</option>
           {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
         </select>
-        <select className="form-input" style={{ width: 'auto' }} value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
+        <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" className="w-auto" value={filterPriority} onChange={e => setFilterPriority(e.target.value)}>
           <option value="">All Priorities</option>
           {PRIORITIES.map(p => <option key={p}>{p}</option>)}
         </select>
       </div>
 
       {view === 'list' ? (
-        <div className="table-wrapper">
+        <div className="relative w-full overflow-auto rounded-lg shadow-vercel bg-card">
           {loading ? (
-            <div className="flex items-center justify-center" style={{ padding: 48, gap: 12 }}><div className="spinner" /><span className="text-muted">Loading…</span></div>
+            <div className="flex items-center justify-center p-12 gap-3"><div className="spinner" /><span className="text-muted">Loading…</span></div>
           ) : tasks.length === 0 ? (
-            <div className="empty-state"><div className="empty-state-icon"><CheckSquare size={24} style={{ color: 'var(--text-muted)' }} /></div><h3>No tasks yet</h3><p>Create your first task</p></div>
+            <div className="flex flex-col items-center justify-center p-12 text-center text-sm text-muted-foreground rounded-lg shadow-vercel border-dashed border border-border"><div className="mb-4 h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center"><CheckSquare size={24} style={{ color: 'var(--text-muted)' }} /></div><h3>No tasks yet</h3><p>Create your first task</p></div>
           ) : (
-            <table>
-              <thead><tr><th>Title</th><th>Client</th><th>Priority</th><th>Status</th><th>Due Date</th><th>Assigned</th><th></th></tr></thead>
+            <table className="w-full caption-bottom text-sm">
+              <thead className="border-b border-border"><tr className="border-b border-border transition-colors hover:bg-muted/50"><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Title</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Client</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Priority</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Status</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Due Date</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Assigned</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap"></th></tr></thead>
               <tbody>
                 {tasks.map(t => (
                   <tr key={t.id}>
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: 280 }}>{t.title}</td>
-                    <td>{t.client_name || <span className="text-muted">—</span>}</td>
-                    <td><span style={{ color: priorityColor[t.priority], fontWeight: 600, fontSize: 12, textTransform: 'capitalize' }}>{t.priority}</span></td>
-                    <td>
-                      <select className="form-input" style={{ padding: '4px 28px 4px 8px', fontSize: 12, width: 'auto' }}
+                    <td className="p-4 align-middle whitespace-nowrap">{t.client_name || <span className="text-muted">—</span>}</td>
+                    <td className="p-4 align-middle whitespace-nowrap"><span style={{ color: priorityColor[t.priority], fontWeight: 600, fontSize: 12, textTransform: 'capitalize' }}>{t.priority}</span></td>
+                    <td className="p-4 align-middle whitespace-nowrap">
+                      <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 px-2 py-1 text-xs w-auto"
                         value={t.status} onChange={e => handleStatusChange(t.id, e.target.value)}>
                         {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                       </select>
                     </td>
-                    <td>{t.due_date ? format(new Date(t.due_date), 'dd MMM') : <span className="text-muted">—</span>}</td>
-                    <td>{t.assignee_name || <span className="text-muted">—</span>}</td>
-                    <td>
+                    <td className="p-4 align-middle whitespace-nowrap">{t.due_date ? format(new Date(t.due_date), 'dd MMM') : <span className="text-muted">—</span>}</td>
+                    <td className="p-4 align-middle whitespace-nowrap">{t.assignee_name || <span className="text-muted">—</span>}</td>
+                    <td className="p-4 align-middle whitespace-nowrap">
                       <div className="flex gap-1">
                         <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(t)}>✏</button>
                         <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(t.id)} style={{ color: 'var(--danger)' }}>🗑</button>
@@ -144,22 +144,22 @@ export default function TasksPage() {
           )}
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16 }}>
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {kanbanCols.map(col => {
             const colTasks = tasks.filter(t => t.status === col)
             return (
-              <div key={col} style={{ flex: '0 0 280px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>{col.replace('_', ' ')}</span>
-                  <span style={{ background: 'var(--bg-secondary)', borderRadius: 100, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{colTasks.length}</span>
+              <div key={col} className="w-[280px] shrink-0 bg-card border-none shadow-vercel rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{col.replace('_', ' ')}</span>
+                  <span className="bg-secondary rounded-full px-2 py-0.5 text-[11px] font-bold">{colTasks.length}</span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="flex flex-col gap-2">
                   {colTasks.map(t => (
                     <div key={t.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px', cursor: 'pointer', transition: 'var(--transition)' }}
                       onClick={() => openEdit(t)}>
-                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{t.title}</div>
-                      {t.client_name && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>{t.client_name}</div>}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div className="text-[13px] font-semibold mb-1.5">{t.title}</div>
+                      {t.client_name && <div className="text-[11px] text-muted-foreground mb-1.5">{t.client_name}</div>}
+                      <div className="flex items-center justify-between">
                         <span style={{ fontSize: 11, fontWeight: 600, color: priorityColor[t.priority], textTransform: 'capitalize' }}>{t.priority}</span>
                         {t.due_date && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{format(new Date(t.due_date), 'dd MMM')}</span>}
                       </div>
@@ -173,49 +173,49 @@ export default function TasksPage() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">{editTask ? 'Edit Task' : 'Create Task'}</span>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}>✕</button>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in" onClick={() => setShowModal(false)}>
+          <div className="bg-background rounded-lg shadow-vercel-popover max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <span className="text-lg font-semibold tracking-vercel-card">{editTask ? 'Edit Task' : 'Create Task'}</span>
+              <button className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 p-2 h-9 w-9 bg-transparent shadow-none hover:bg-accent hover:text-accent-foreground" onClick={() => setShowModal(false)}>✕</button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Title *</label>
-                  <input className="form-input" required value={form.title || ''} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Task title…" />
+              <div className="p-6" className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group" className="md:col-span-2">
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Title *</label>
+                  <input className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" required value={form.title || ''} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Task title…" />
                 </div>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label">Description</label>
-                  <textarea className="form-input" rows={2} value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} style={{ resize: 'vertical' }} />
+                <div className="form-group" className="md:col-span-2">
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Description</label>
+                  <textarea className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" rows={2} value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} className="resize-y" />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Client</label>
-                  <select className="form-input" value={form.client_id || ''} onChange={e => setForm({ ...form, client_id: e.target.value || null })}>
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Client</label>
+                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={form.client_id || ''} onChange={e => setForm({ ...form, client_id: e.target.value || null })}>
                     <option value="">No client</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Priority</label>
-                  <select className="form-input" value={form.priority || 'medium'} onChange={e => setForm({ ...form, priority: e.target.value })}>
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Priority</label>
+                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={form.priority || 'medium'} onChange={e => setForm({ ...form, priority: e.target.value })}>
                     {PRIORITIES.map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Status</label>
-                  <select className="form-input" value={form.status || 'pending'} onChange={e => setForm({ ...form, status: e.target.value })}>
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Status</label>
+                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={form.status || 'pending'} onChange={e => setForm({ ...form, status: e.target.value })}>
                     {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Due Date</label>
-                  <input className="form-input" type="date" value={form.due_date || ''} onChange={e => setForm({ ...form, due_date: e.target.value || null })} />
+                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Due Date</label>
+                  <input className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" type="date" value={form.due_date || ''} onChange={e => setForm({ ...form, due_date: e.target.value || null })} />
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editTask ? 'Update' : 'Create Task'}</button>
+              <div className="flex items-center justify-end gap-2 p-6 border-t border-border bg-muted/20">
+                <button type="button" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">{editTask ? 'Update' : 'Create Task'}</button>
               </div>
             </form>
           </div>

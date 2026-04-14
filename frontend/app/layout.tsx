@@ -17,17 +17,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <Toaster
-          position="top-right"
+          position="bottom-right"
           toastOptions={{
             style: {
-              background: '#101e35',
-              color: '#f0f4fc',
-              border: '1px solid #1a2d4a',
-              fontSize: '13px',
-              borderRadius: '10px',
+              background: '#ffffff',
+              color: '#171717',
+              border: 'none',
+              boxShadow: '0px 0px 0px 1px rgba(0,0,0,0.08), 0px 4px 12px rgba(0,0,0,0.08), inset 0px 0px 0px 1px #fafafa',
+              fontSize: '14px',
+              fontFeatureSettings: '"liga" 1',
+              fontWeight: 500,
+              borderRadius: '8px',
             },
             success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-            error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            error: { iconTheme: { primary: '#ff5b4f', secondary: '#fff' } },
           }}
         />
       </body>

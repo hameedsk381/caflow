@@ -8,6 +8,7 @@ from app.models.profile import Profile
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskListResponse
 from app.core.dependencies import get_current_user, get_current_staff
+from app.services.task_service import TaskRepository
 import uuid
 
 router = APIRouter()
@@ -24,36 +25,24 @@ async def list_tasks(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    query = select(Task).where(Task.firm_id == current_user.firm_id)
-    if client_id:
-        query = query.where(Task.client_id == client_id)
-    if status:
-        query = query.where(Task.status == status)
-    if priority:
-        query = query.where(Task.priority == priority)
-    if assigned_to:
-        query = query.where(Task.assigned_to == assigned_to)
+    repo = TaskRepository(db, current_user.firm_id)
+    skip = (page - 1) * size
+    
+    filters = {}
+    if client_id: filters["client_id"] = client_id
+    if status: filters["status"] = status
+    if priority: filters["priority"] = priority
+    if assigned_to: filters["assigned_to"] = assigned_to
 
-    count_result = await db.execute(select(func.count()).select_from(query.subquery()))
-    total = count_result.scalar()
-
-    query = query.offset((page - 1) * size).limit(size).order_by(Task.created_at.desc())
-    result = await db.execute(query)
-    tasks = result.scalars().all()
+    tasks, total = await repo.list_with_relations(skip=skip, limit=size, **filters)
 
     items = []
     for t in tasks:
         r = TaskResponse.model_validate(t)
-        if t.client_id:
-            c_res = await db.execute(select(Client).where(Client.id == t.client_id))
-            client = c_res.scalar_one_or_none()
-            if client:
-                r.client_name = client.name
-        if t.assigned_to:
-            p_res = await db.execute(select(Profile).where(Profile.user_id == t.assigned_to))
-            prof = p_res.scalar_one_or_none()
-            if prof:
-                r.assignee_name = prof.name
+        if hasattr(t, "client") and t.client:
+            r.client_name = t.client.name
+        if hasattr(t, "assignee") and t.assignee and hasattr(t.assignee, "profile") and t.assignee.profile:
+            r.assignee_name = t.assignee.profile.name
         items.append(r)
 
     return TaskListResponse(items=items, total=total, page=page, size=size)
@@ -65,14 +54,10 @@ async def create_task(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    task = Task(
-        firm_id=current_user.firm_id,
-        created_by=current_user.id,
-        **data.model_dump()
-    )
-    db.add(task)
-    await db.commit()
-    await db.refresh(task)
+    repo = TaskRepository(db, current_user.firm_id)
+    obj_in = data.model_dump()
+    obj_in["created_by"] = current_user.id
+    task = await repo.create(obj_in)
     return task
 
 
@@ -82,10 +67,8 @@ async def get_task(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Task).where(Task.id == task_id, Task.firm_id == current_user.firm_id)
-    )
-    task = result.scalar_one_or_none()
+    repo = TaskRepository(db, current_user.firm_id)
+    task = await repo.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
@@ -98,16 +81,12 @@ async def update_task(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Task).where(Task.id == task_id, Task.firm_id == current_user.firm_id)
-    )
-    task = result.scalar_one_or_none()
+    repo = TaskRepository(db, current_user.firm_id)
+    task = await repo.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    for field, value in data.model_dump(exclude_none=True).items():
-        setattr(task, field, value)
-    await db.commit()
-    await db.refresh(task)
+    
+    task = await repo.update(task, data.model_dump(exclude_none=True))
     return task
 
 
@@ -117,11 +96,7 @@ async def delete_task(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Task).where(Task.id == task_id, Task.firm_id == current_user.firm_id)
-    )
-    task = result.scalar_one_or_none()
-    if not task:
+    repo = TaskRepository(db, current_user.firm_id)
+    deleted = await repo.delete(task_id)
+    if not deleted:
         raise HTTPException(status_code=404, detail="Task not found")
-    await db.delete(task)
-    await db.commit()

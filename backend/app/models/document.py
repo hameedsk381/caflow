@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, Integer
+from sqlalchemy import Column, String, ForeignKey, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.base import Base, TimestampMixin
@@ -16,6 +16,7 @@ class Document(Base, TimestampMixin):
     file_type = Column(String(100), nullable=True)
     file_size = Column(Integer, nullable=True)  # in bytes
     category = Column(String(100), nullable=True)  # Tax, Legal, KYC, etc.
+    is_client_visible = Column(Boolean, default=False)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships

@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import joinedload
+from fastapi_cache.decorator import cache
 from app.db.database import get_db
 from app.models.client import Client
 from app.models.compliance import Compliance
 from app.models.task import Task
 from app.models.invoice import Invoice
 from app.models.activity_log import ActivityLog
-from app.models.profile import Profile
 from app.models.user import User
 from app.core.dependencies import get_current_staff
 from datetime import date, timedelta
@@ -18,9 +19,15 @@ from app.models.register import Register
 
 router = APIRouter()
 
+def firm_key_builder(func, namespace: str = "", *, request: Request = None, response: Response = None, **kwargs):
+    current_user = kwargs.get("current_user")
+    firm_id = str(current_user.firm_id) if current_user else "global"
+    return f"{namespace}:{func.__name__}:{firm_id}"
 
 @router.get("/stats")
+@cache(expire=300, key_builder=firm_key_builder)
 async def get_stats(
+    request: Request,
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
@@ -160,20 +167,19 @@ async def get_recent_activity(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(ActivityLog).where(
-            ActivityLog.firm_id == current_user.firm_id
-        ).order_by(ActivityLog.created_at.desc()).limit(15)
+        select(ActivityLog)
+        .options(joinedload(ActivityLog.actor).joinedload(User.profile))
+        .where(ActivityLog.firm_id == current_user.firm_id)
+        .order_by(ActivityLog.created_at.desc())
+        .limit(15)
     )
     logs = result.scalars().all()
 
     items = []
     for log in logs:
         actor_name = "System"
-        if log.actor_id:
-            p_res = await db.execute(select(Profile).where(Profile.user_id == log.actor_id))
-            prof = p_res.scalar_one_or_none()
-            if prof:
-                actor_name = prof.name
+        if log.actor and getattr(log.actor, "profile", None):
+            actor_name = log.actor.profile.name
 
         items.append({
             "id": str(log.id),

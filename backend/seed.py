@@ -15,6 +15,10 @@ from app.models.task import Task
 from app.models.invoice import Invoice
 from app.models.notification import Notification
 from app.models.activity_log import ActivityLog
+from app.models.document import Document
+from app.models.vault import EncryptedCredential, DSCToken
+from app.models.notification_rule import NotificationRule
+from app.models.timesheet import TimesheetLog
 import uuid
 from datetime import date, timedelta, datetime
 
