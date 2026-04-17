@@ -1,0 +1,162 @@
+<h2>Calendar & Leaves — Design Preview</h2>
+<p class="subtitle">Full month view with integrated leaves. Review each section below.</p>
+
+<div class="section">
+  <div class="mockup">
+    <div class="mockup-header">📅 /calendar — Monthly View (Default)</div>
+    <div class="mockup-body" style="padding:0">
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button style="padding:4px 10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:12px">← Prev</button>
+          <strong style="font-size:14px">April 2026</strong>
+          <button style="padding:4px 10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:12px">Next →</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="padding:3px 10px;border-radius:20px;background:#6366f1;color:#fff;font-size:11px;font-weight:600">Month</span>
+          <span style="padding:3px 10px;border-radius:20px;background:#f3f4f6;color:#6b7280;font-size:11px">Week</span>
+          <span style="padding:3px 10px;border-radius:20px;background:#f3f4f6;color:#6b7280;font-size:11px">Agenda</span>
+        </div>
+        <button style="padding:6px 14px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600">+ Add Event</button>
+      </div>
+
+      <!-- Legend -->
+      <div style="display:flex;gap:16px;padding:8px 16px;background:#fff;border-bottom:1px solid #f3f4f6;flex-wrap:wrap">
+        <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#6366f1;display:inline-block"></span>Compliance</span>
+        <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#3b82f6;display:inline-block"></span>Tasks</span>
+        <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#f59e0b;display:inline-block"></span>Hearings</span>
+        <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#10b981;display:inline-block"></span>Leave (Approved)</span>
+        <span style="font-size:11px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block"></span>Leave (Pending)</span>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid #e5e7eb">
+        <!-- Day headers -->
+        <div style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:#6b7280;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;background:#f9fafb">Sun</div>
+        <div style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:#6b7280;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;background:#f9fafb">Mon</div>
+        <div style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:#6b7280;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;background:#f9fafb">Tue</div>
+        <div style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:#6b7280;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;background:#f9fafb">Wed</div>
+        <div style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:#6b7280;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;background:#f9fafb">Thu</div>
+        <div style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:#6b7280;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;background:#f9fafb">Fri</div>
+        <div style="padding:8px;text-align:center;font-size:11px;font-weight:600;color:#6b7280;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;background:#f9fafb">Sat</div>
+
+        <!-- Row 1 -->
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;color:#d1d5db;font-size:12px">29</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;color:#d1d5db;font-size:12px">30</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;color:#d1d5db;font-size:12px">31</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600">1</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600">2
+          <div style="margin-top:3px;padding:2px 5px;background:#3b82f6;color:#fff;border-radius:3px;font-size:10px;font-weight:500">ITR Filing</div>
+        </div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600">3</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600;background:#fafafa">4</div>
+
+        <!-- Row 2 -->
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600;background:#fafafa">5</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600">6
+          <div style="margin-top:3px;padding:2px 5px;background:#10b981;color:#fff;border-radius:3px;font-size:10px">Rahul – Leave</div>
+        </div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600">7
+          <div style="margin-top:3px;padding:2px 5px;background:#6366f1;color:#fff;border-radius:3px;font-size:10px">GST Due</div>
+        </div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600;background:#eff6ff;border:2px solid #6366f1">17 ◉
+          <div style="margin-top:3px;padding:2px 5px;background:#f59e0b;color:#fff;border-radius:3px;font-size:10px">ITAT Hearing</div>
+          <div style="margin-top:2px;padding:2px 5px;background:#f87171;color:#fff;border-radius:3px;font-size:10px">Priya – Pending</div>
+        </div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600">18</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600">19</div>
+        <div style="padding:6px;min-height:80px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600;background:#fafafa">20</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="mockup">
+    <div class="mockup-header">🌴 Leaves Panel — Submit & Approve</div>
+    <div class="mockup-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <!-- Submit Leave -->
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
+          <p style="font-size:12px;font-weight:700;margin-bottom:10px;text-transform:uppercase;color:#6b7280">Apply for Leave</p>
+          <div style="display:grid;gap:8px">
+            <select style="padding:6px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;width:100%">
+              <option>Casual Leave</option>
+              <option>Sick Leave</option>
+              <option>Annual Leave</option>
+              <option>Compensatory</option>
+              <option>Work From Home</option>
+              <option>Half Day</option>
+            </select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <input type="date" style="padding:6px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px" placeholder="From"/>
+              <input type="date" style="padding:6px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px" placeholder="To"/>
+            </div>
+            <textarea style="padding:6px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;resize:none;height:56px" placeholder="Reason..."></textarea>
+            <button style="padding:7px;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600">Submit Request</button>
+          </div>
+        </div>
+
+        <!-- Pending Approvals -->
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
+          <p style="font-size:12px;font-weight:700;margin-bottom:10px;text-transform:uppercase;color:#6b7280">Pending Approvals</p>
+          <div style="display:grid;gap:8px">
+            <div style="padding:8px;background:#fef9ee;border:1px solid #fde68a;border-radius:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <p style="font-size:12px;font-weight:600">Priya S.</p>
+                  <p style="font-size:10px;color:#6b7280">Sick Leave · Apr 17–18</p>
+                </div>
+                <div style="display:flex;gap:4px">
+                  <button style="padding:3px 8px;background:#10b981;color:#fff;border:none;border-radius:5px;font-size:10px">✓</button>
+                  <button style="padding:3px 8px;background:#f87171;color:#fff;border:none;border-radius:5px;font-size:10px">✗</button>
+                </div>
+              </div>
+            </div>
+            <div style="padding:8px;background:#fef9ee;border:1px solid #fde68a;border-radius:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <p style="font-size:12px;font-weight:600">Amit K.</p>
+                  <p style="font-size:10px;color:#6b7280">Casual Leave · Apr 21</p>
+                </div>
+                <div style="display:flex;gap:4px">
+                  <button style="padding:3px 8px;background:#10b981;color:#fff;border:none;border-radius:5px;font-size:10px">✓</button>
+                  <button style="padding:3px 8px;background:#f87171;color:#fff;border:none;border-radius:5px;font-size:10px">✗</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Architecture Summary</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <tr style="background:#f9fafb">
+      <th style="padding:8px;text-align:left;border:1px solid #e5e7eb">Layer</th>
+      <th style="padding:8px;text-align:left;border:1px solid #e5e7eb">What gets built</th>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid #e5e7eb;font-weight:600">Backend models</td>
+      <td style="padding:8px;border:1px solid #e5e7eb">LeaveRequest (type, from_date, to_date, reason, status, approved_by)</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid #e5e7eb;font-weight:600">Backend API</td>
+      <td style="padding:8px;border:1px solid #e5e7eb">/api/leaves (CRUD) · /api/leaves/{id}/approve · /api/calendar/events (aggregates all sources)</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid #e5e7eb;font-weight:600">Frontend</td>
+      <td style="padding:8px;border:1px solid #e5e7eb">react-big-calendar · /calendar page · /leaves tab in sidebar · Leave submit + manager approval panel</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;border:1px solid #e5e7eb;font-weight:600">Calendar events</td>
+      <td style="padding:8px;border:1px solid #e5e7eb">Compliance (indigo) · Tasks (blue) · Hearings (amber) · Leave approved (green) · Leave pending (red)</td>
+    </tr>
+  </table>
+</div>
+
+<p style="margin-top:16px;font-size:13px;color:#6b7280">Does this design look right? Confirm in the terminal to proceed to the spec.</p>

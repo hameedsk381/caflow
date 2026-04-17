@@ -15,8 +15,8 @@ class CredentialResponse(BaseModel):
     client_id: uuid.UUID
     portal_name: str
     username: str
-    # NEVER include the standard password in a list response
     notes: Optional[str] = None
+    client_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -38,6 +38,7 @@ class DSCTokenResponse(BaseModel):
     expiry_date: date
     physical_location: Optional[str] = None
     is_active: bool
+    client_name: Optional[str] = None
 
     class Config:
         from_attributes = True

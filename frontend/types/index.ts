@@ -130,4 +130,9 @@ export interface DashboardStats {
   active_services?: number
   overdue_notices?: number
   total_registers?: number
+  total_sales: number
+  total_collection: number
+  total_outstanding: number
+  expiring_dsc?: number
+  expiring_licenses?: number
 }

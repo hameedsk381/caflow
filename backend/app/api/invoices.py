@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.db.database import get_db
@@ -118,3 +119,63 @@ async def delete_invoice(
         raise HTTPException(status_code=404, detail="Invoice not found")
     await db.delete(invoice)
     await db.commit()
+
+from fastapi.responses import Response
+from sqlalchemy.orm import joinedload
+
+@router.get("/export/tally")
+async def export_to_tally(
+    current_user: User = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    # Fetch all paid/sent invoices for the firm
+    result = await db.execute(
+        select(Invoice)
+        .options(joinedload(Invoice.client))
+        .where(
+            Invoice.firm_id == current_user.firm_id,
+            Invoice.status.in_(["paid", "sent"])
+        )
+    )
+    invoices = result.scalars().all()
+
+    # Build Tally XML
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n<ENVELOPE>\n'
+    xml += '  <HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER>\n'
+    xml += '  <BODY>\n    <IMPORTDATA>\n      <REQUESTDESC><REPORTNAME>Vouchers</REPORTNAME></REQUESTDESC>\n      <REQUESTDATA>\n'
+    
+    for inv in invoices:
+        client_name = inv.client.name if inv.client else "Walk-in Client"
+        vch_date = inv.created_at.strftime("%Y%m%d")
+        
+        xml += f'        <TALLYMESSAGE xmlns:UDF="TallyUDF">\n'
+        xml += f'          <VOUCHER VCHTYPE="Sales" ACTION="Create" OBJVIEW="AccountingVoucherView">\n'
+        xml += f'            <DATE>{vch_date}</DATE>\n'
+        xml += f'            <VOUCHERNUMBER>{inv.invoice_number}</VOUCHERNUMBER>\n'
+        xml += f'            <PARTYLEDGERNAME>{client_name}</PARTYLEDGERNAME>\n'
+        xml += f'            <PERSISTEDVIEW>AccountingVoucherView</PERSISTEDVIEW>\n'
+        
+        # Debiting the Party
+        xml += f'            <ALLLEDGERENTRIES.LIST>\n'
+        xml += f'              <LEDGERNAME>{client_name}</LEDGERNAME>\n'
+        xml += f'              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>\n'
+        xml += f'              <AMOUNT>-{inv.total_amount}</AMOUNT>\n'
+        xml += f'            </ALLLEDGERENTRIES.LIST>\n'
+        
+        # Crediting the Sales Account
+        xml += f'            <ALLLEDGERENTRIES.LIST>\n'
+        xml += f'              <LEDGERNAME>Professional Fees Sales</LEDGERNAME>\n'
+        xml += f'              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>\n'
+        xml += f'              <AMOUNT>{inv.total_amount}</AMOUNT>\n'
+        xml += f'            </ALLLEDGERENTRIES.LIST>\n'
+        
+        xml += f'          </VOUCHER>\n'
+        xml += f'        </TALLYMESSAGE>\n'
+        
+    xml += '      </REQUESTDATA>\n    </IMPORTDATA>\n  </BODY>\n</ENVELOPE>'
+    
+    return Response(
+        content=xml, 
+        media_type="application/xml",
+        headers={"Content-Disposition": f"attachment; filename=invoices_tally_{date.today()}.xml"}
+    )

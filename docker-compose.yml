@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: caflow
       POSTGRES_PASSWORD: caflow123
     ports:
-      - "5432:5432"
+      - "5438:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
     image: redis:7-alpine
     container_name: caflow_redis
     ports:
-      - "6379:6379"
+      - "6381:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -63,6 +63,43 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: caflow_worker
+    command: celery -A app.core.celery_app worker --loglevel=info -Q main-queue
+    environment:
+      DATABASE_URL: postgresql+asyncpg://caflow:caflow123@postgres:5432/caflow
+      DATABASE_URL_SYNC: postgresql://caflow:caflow123@postgres:5432/caflow
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: caflow-secret-key-change-in-production-minimum-32-chars
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: caflow_beat
+    command: celery -A app.core.celery_app beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://caflow:caflow123@postgres:5432/caflow
+      DATABASE_URL_SYNC: postgresql://caflow:caflow123@postgres:5432/caflow
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: caflow-secret-key-change-in-production-minimum-32-chars
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 
 volumes:
   postgres_data:

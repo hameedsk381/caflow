@@ -25,6 +25,8 @@ class TimesheetLogResponse(BaseModel):
     end_time: Optional[datetime]
     duration_hours: Optional[float]
     notes: Optional[str]
+    client_name: Optional[str] = None
+    task_title: Optional[str] = None
 
     class Config:
         from_attributes = True

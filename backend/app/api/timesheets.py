@@ -10,6 +10,10 @@ from app.models.user import User
 from app.schemas.timesheet import TimesheetLogCreate, TimesheetLogUpdate, TimesheetLogResponse
 from app.core.dependencies import get_current_staff
 
+from app.models.client import Client
+from app.models.task import Task
+from sqlalchemy.orm import joinedload
+
 router = APIRouter()
 
 @router.post("", response_model=TimesheetLogResponse, status_code=status.HTTP_201_CREATED)
@@ -35,7 +39,20 @@ async def create_timesheet_log(
     db.add(log)
     await db.commit()
     await db.refresh(log)
-    return log
+    
+    # Reload with joined data for response
+    res = await db.execute(
+        select(TimesheetLog)
+        .options(joinedload(TimesheetLog.client), joinedload(TimesheetLog.task))
+        .where(TimesheetLog.id == log.id)
+    )
+    log_with_data = res.scalar_one()
+    
+    return {
+        **log_with_data.__dict__,
+        "client_name": log_with_data.client.name if log_with_data.client else None,
+        "task_title": log_with_data.task.title if log_with_data.task else None
+    }
 
 @router.put("/{log_id}", response_model=TimesheetLogResponse)
 async def update_timesheet_log(
@@ -44,10 +61,14 @@ async def update_timesheet_log(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(TimesheetLog).where(
-        TimesheetLog.id == log_id,
-        TimesheetLog.firm_id == current_user.firm_id
-    ))
+    result = await db.execute(
+        select(TimesheetLog)
+        .options(joinedload(TimesheetLog.client), joinedload(TimesheetLog.task))
+        .where(
+            TimesheetLog.id == log_id,
+            TimesheetLog.firm_id == current_user.firm_id
+        )
+    )
     log = result.scalar_one_or_none()
     
     if not log:
@@ -62,15 +83,71 @@ async def update_timesheet_log(
         
     await db.commit()
     await db.refresh(log)
-    return log
+    
+    return {
+        **log.__dict__,
+        "client_name": log.client.name if log.client else None,
+        "task_title": log.task.title if log.task else None
+    }
+
+@router.get("", response_model=List[TimesheetLogResponse])
+async def list_all_timesheets(
+    current_user: User = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(TimesheetLog)
+        .options(joinedload(TimesheetLog.client), joinedload(TimesheetLog.task))
+        .where(TimesheetLog.firm_id == current_user.firm_id)
+        .order_by(TimesheetLog.start_time.desc())
+    )
+    items = result.scalars().all()
+    return [
+        {
+            **item.__dict__,
+            "client_name": item.client.name if item.client else None,
+            "task_title": item.task.title if item.task else None
+        } for item in items
+    ]
 
 @router.get("/my-logs", response_model=List[TimesheetLogResponse])
 async def list_my_timesheets(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
+    result = await db.execute(
+        select(TimesheetLog)
+        .options(joinedload(TimesheetLog.client), joinedload(TimesheetLog.task))
+        .where(
+            TimesheetLog.user_id == current_user.id,
+            TimesheetLog.firm_id == current_user.firm_id
+        )
+        .order_by(TimesheetLog.start_time.desc())
+    )
+    items = result.scalars().all()
+    return [
+        {
+            **item.__dict__,
+            "client_name": item.client.name if item.client else None,
+            "task_title": item.task.title if item.task else None
+        } for item in items
+    ]
+
+@router.delete("/{log_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_timesheet_log(
+    log_id: uuid.UUID,
+    current_user: User = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
     result = await db.execute(select(TimesheetLog).where(
-        TimesheetLog.user_id == current_user.id,
+        TimesheetLog.id == log_id,
         TimesheetLog.firm_id == current_user.firm_id
-    ).order_by(TimesheetLog.start_time.desc()))
-    return result.scalars().all()
+    ))
+    log = result.scalar_one_or_none()
+    
+    if not log:
+        raise HTTPException(status_code=404, detail="Timesheet not found")
+        
+    await db.delete(log)
+    await db.commit()
+    return None

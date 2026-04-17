@@ -1,0 +1,40 @@
+<h2>Calendar & Leaves — Which layout fits best?</h2>
+<p class="subtitle">Pick the approach for CAFlow's calendar module</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Full Calendar View (Recommended)</h3>
+      <p>Monthly/weekly grid showing all events — compliance deadlines, tasks, leave requests, hearings — colour-coded by type. Staff see their own events; admins see firm-wide view. Leaves submitted via a side panel.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Visual at-a-glance overview</li><li>Matches Turia's calendar exactly</li><li>Leaves integrated naturally</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Needs a calendar library (react-big-calendar)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Timeline / List View</h3>
+      <p>Chronological list of upcoming events grouped by day. Simpler to build, no calendar grid. Leaves shown as a separate tab on the same page.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Fast to build</li><li>Works well on mobile</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Less visual, harder to spot gaps</li><li>Doesn't match Turia's look</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Calendar + Leaves as Separate Pages</h3>
+      <p>Full calendar grid on <code>/calendar</code>. Separate <code>/leaves</code> page with submit / approve workflow. Events shown on calendar but leave management is standalone.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Clean separation of concerns</li><li>Leaves page can grow independently</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Two pages to navigate for one workflow</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

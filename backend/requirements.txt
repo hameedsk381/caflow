@@ -21,3 +21,6 @@ pytest
 pytest-asyncio
 slowapi
 fastapi-cache2[redis]
+twilio>=9.0.0
+sendgrid>=6.11.0
+jinja2

@@ -2,19 +2,35 @@
 import { useState, useEffect, useCallback } from 'react'
 import { complianceApi, clientsApi } from '@/lib/api'
 import type { ComplianceRecord, Client } from '@/types'
-import { Plus, ShieldCheck, AlertTriangle } from 'lucide-react'
+import { 
+  Plus, ShieldCheck, AlertTriangle, Search, Filter,
+  MoreVertical, Edit3, Trash2, Calendar, Building2,
+  CheckCircle2, Clock, FileWarning, ArrowUpRight,
+  ExternalLink, Info, Bell, Hash
+} from 'lucide-react'
 import toast from 'react-hot-toast'
-import { format, isPast, isToday } from 'date-fns'
+import { format, isPast, isToday, differenceInDays } from 'date-fns'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const TYPES = ['GST', 'ITR', 'TDS', 'ROC', 'PT', 'OTHER']
 const STATUS_OPTIONS = ['pending', 'in_progress', 'filed', 'overdue']
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    pending: 'badge-warning', in_progress: 'badge-info',
-    filed: 'badge-success', overdue: 'badge-danger'
-  }
-  return <span className={`badge ${map[status] || 'badge-neutral'}`}>{status?.replace('_', ' ')}</span>
+const statusMap: Record<string, { label: string, color: string }> = {
+  filed: { label: 'Filed', color: 'bg-emerald-100 text-emerald-700' },
+  in_progress: { label: 'Under Process', color: 'bg-blue-100 text-blue-700' },
+  pending: { label: 'Pending', color: 'bg-slate-100 text-slate-500' },
+  overdue: { label: 'Critical Overdue', color: 'bg-rose-100 text-rose-700' }
 }
 
 export default function CompliancePage() {
@@ -27,6 +43,7 @@ export default function CompliancePage() {
   const [showModal, setShowModal] = useState(false)
   const [editRecord, setEditRecord] = useState<ComplianceRecord | null>(null)
   const [form, setForm] = useState<any>({})
+  const [search, setSearch] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -38,7 +55,7 @@ export default function CompliancePage() {
       setRecords(cRes.data.items)
       setTotal(cRes.data.total)
       setClients(clRes.data.items)
-    } catch { toast.error('Failed to load compliance data') }
+    } catch { toast.error('Failed to load compliance console') }
     finally { setLoading(false) }
   }, [filterStatus, filterType])
 
@@ -52,174 +69,279 @@ export default function CompliancePage() {
     try {
       if (editRecord) {
         await complianceApi.update(editRecord.id, form)
-        toast.success('Record updated!')
+        toast.success('Compliance records updated!')
       } else {
         await complianceApi.create(form)
-        toast.success('Compliance record added!')
+        toast.success('New statutory record indexed!')
       }
       setShowModal(false)
       fetchData()
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Error saving record')
+      toast.error(err.response?.data?.detail || 'Filing record error')
     }
   }
 
   const handleQuickStatus = async (id: string, status: string) => {
     try {
       await complianceApi.update(id, { status })
-      toast.success('Status updated')
+      toast.success('Filing status updated')
       fetchData()
-    } catch { toast.error('Failed to update status') }
+    } catch { toast.error('Failed to shift filing status') }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this compliance record?')) return
+    if (!confirm('Formally purge this compliance record?')) return
     try {
       await complianceApi.delete(id)
-      toast.success('Deleted')
+      toast.success('Record purged')
       fetchData()
-    } catch { toast.error('Failed to delete') }
+    } catch { toast.error('Failed to purge record') }
   }
 
-  const overdue = records.filter(r => r.status === 'overdue').length
+  const filteredRecords = records.filter(r => 
+    (r.client_name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (r.filing_reference || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const overdueCount = records.filter(r => r.status === 'overdue' || (r.status !== 'filed' && isPast(new Date(r.due_date)))).length
+  const criticalSoon = records.filter(r => r.status !== 'filed' && !isPast(new Date(r.due_date)) && differenceInDays(new Date(r.due_date), new Date()) <= 7).length
 
   return (
-    <div>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-500">
+      {/* Precision Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-[28px] md:text-[40px] font-semibold tracking-vercel-display leading-[1.20]">Compliance Tracker</h1>
-          <p className="text-muted-foreground mt-2">{total} records · {overdue > 0 && <span style={{ color: 'var(--danger)' }}>{overdue} overdue</span>}</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Statutory Filing Console</h1>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{total} Compliance Records Active</p>
         </div>
-        <button id="add-compliance-btn" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" onClick={openCreate}>
-          <Plus size={15} /> Add Record
-        </button>
+        
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-9 px-4 text-[11px] font-black uppercase tracking-tight">Sync MCA/GST</Button>
+          <Button onClick={openCreate} className="h-9 px-4 bg-blue-600 text-white font-black text-[11px] uppercase tracking-wider shadow-lg shadow-blue-500/20">
+            <Plus className="h-4 w-4 mr-2" />
+            Index Return
+          </Button>
+        </div>
       </div>
 
-      {overdue > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: 'var(--danger-bg)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 'var(--radius-sm)', marginBottom: 20, fontSize: 13, color: 'var(--danger)' }}>
-          <AlertTriangle size={16} /><strong>{overdue} compliance item{overdue > 1 ? 's are' : ' is'} overdue!</strong> Please file immediately.
+      {/* Critical Alerts Ribbon */}
+      {(overdueCount > 0 || criticalSoon > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           {overdueCount > 0 && (
+             <div className="flex items-center gap-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 animate-pulse">
+                <FileWarning className="h-5 w-5 shrink-0" />
+                <div className="text-[11px] font-black uppercase tracking-tight">
+                   {overdueCount} Critical Overdue Filing{overdueCount > 1 ? 's' : ''} detected. Immediate action required.
+                </div>
+             </div>
+           )}
+           {criticalSoon > 0 && (
+             <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700">
+                <Bell className="h-5 w-5 shrink-0" />
+                <div className="text-[11px] font-black uppercase tracking-tight">
+                   {criticalSoon} Filing{criticalSoon > 1 ? 's' : ''} approaching statutory deadline within 7 days.
+                </div>
+             </div>
+           )}
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" style={{ width: 'auto' }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="">All Status</option>
-          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-        </select>
-        <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" style={{ width: 'auto' }} value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">All Types</option>
-          {TYPES.map(t => <option key={t}>{t}</option>)}
-        </select>
+      {/* Summary Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
+          <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Successful Filings</p>
+                    <p className="text-2xl font-black tracking-tighter text-emerald-600">{records.filter(r => r.status === 'filed').length}</p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-emerald-100" />
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
+          <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Under Process</p>
+                    <p className="text-2xl font-black tracking-tighter text-blue-600">{records.filter(r => r.status === 'in_progress').length}</p>
+                </div>
+                <Clock className="h-8 w-8 text-blue-100" />
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
+          <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pending Intake</p>
+                    <p className="text-2xl font-black tracking-tighter text-slate-400">{records.filter(r => r.status === 'pending').length}</p>
+                </div>
+                <Info className="h-8 w-8 text-slate-100" />
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-[#0f172a] text-white">
+          <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Total Assessees</p>
+                    <p className="text-2xl font-black tracking-tighter">{Array.from(new Set(records.map(r => r.client_id))).length}</p>
+                </div>
+                <Building2 className="h-8 w-8 text-blue-500/20" />
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="relative w-full overflow-auto rounded-lg shadow-vercel bg-card">
-        {loading ? (
-          <div className="flex items-center justify-center" style={{ padding: 48, gap: 12 }}>
-            <div className="spinner" /><span className="text-muted">Loading…</span>
+      {/* Filter and Table Tools */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+             <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Input placeholder="Search Assessee or ACK#..." className="h-8 pl-8 w-[240px] text-xs font-bold border-slate-200 bg-white" value={search} onChange={(e) => setSearch(e.target.value)} />
+             </div>
+             <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="h-8 w-[100px] text-xs font-bold border-slate-200 bg-white">
+                    <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="null">All Types</SelectItem>
+                    {TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+             </Select>
+             <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-8 w-[130px] text-xs font-bold border-slate-200 bg-white">
+                    <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="null">All Status</SelectItem>
+                    {STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}
+                </SelectContent>
+             </Select>
           </div>
-        ) : records.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center text-sm text-muted-foreground rounded-lg shadow-vercel border-dashed border border-border">
-            <div className="mb-4 h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center"><ShieldCheck size={24} style={{ color: 'var(--text-muted)' }} /></div>
-            <h3>No compliance records</h3><p>Add GST, ITR, TDS or other compliance items</p>
+          <div className="flex gap-2">
+             <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-tight">Export Return List</Button>
           </div>
-        ) : (
-          <table className="w-full caption-bottom text-sm">
-            <thead className="border-b border-border"><tr className="border-b border-border transition-colors hover:bg-muted/50">
-              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Client</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Type</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Period</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Due Date</th>
-              <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Status</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Assigned</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap">Reference</th><th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap"></th>
-            </tr></thead>
-            <tbody>
-              {records.map(r => {
+      </div>
+
+      {/* High-Density Compliance Table */}
+      <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-slate-100/50">
+                <TableRow className="h-10 hover:bg-transparent border-b border-slate-100">
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Assessee / Client</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Return Class</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Periodicity</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Statutory Deadline</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500 text-center">Filing Status</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">ACK / ARN Reference</TableHead>
+                    <TableHead className="px-4 w-10"></TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell colSpan={7} className="h-24 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Retrieving Statutory Calendars…</TableCell></TableRow>
+              ) : filteredRecords.length === 0 ? (
+                <TableRow><TableCell colSpan={7} className="h-24 text-center text-xs font-bold text-slate-400 italic">No compliance records detected.</TableCell></TableRow>
+              ) : filteredRecords.map((r) => {
                 const isLate = r.status !== 'filed' && isPast(new Date(r.due_date))
                 return (
-                  <tr key={r.id} style={isLate ? { background: 'rgba(239,68,68,0.04)' } : {}}>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.client_name || '—'}</td>
-                    <td className="p-4 align-middle whitespace-nowrap"><span className="badge badge-accent">{r.type}</span></td>
-                    <td className="p-4 align-middle whitespace-nowrap">{r.period || '—'}</td>
-                    <td style={{ color: isLate ? 'var(--danger)' : 'inherit', fontWeight: isLate ? 600 : 400 }}>
-                      {format(new Date(r.due_date), 'dd MMM yyyy')}
-                      {isLate && <span style={{ fontSize: 10, marginLeft: 6 }}>⚠</span>}
-                    </td>
-                    <td className="p-4 align-middle whitespace-nowrap">
-                      <select
-                        className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                        style={{ padding: '4px 28px 4px 8px', fontSize: 12, width: 'auto' }}
-                        value={r.status}
-                        onChange={e => handleQuickStatus(r.id, e.target.value)}
-                      >
-                        {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                      </select>
-                    </td>
-                    <td className="p-4 align-middle whitespace-nowrap">{r.assignee_name || <span className="text-muted">Unassigned</span>}</td>
-                    <td style={{ fontSize: 12 }}>{r.filing_reference || <span className="text-muted">—</span>}</td>
-                    <td className="p-4 align-middle whitespace-nowrap">
-                      <div className="flex gap-1">
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(r)}>✏</button>
-                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(r.id)} style={{ color: 'var(--danger)' }}>🗑</button>
-                      </div>
-                    </td>
-                  </tr>
+                  <TableRow key={r.id} className={`h-12 border-slate-50 transition-colors ${isLate ? 'bg-rose-50/30 hover:bg-rose-50/50' : 'hover:bg-slate-50/50'}`}>
+                    <TableCell className="px-4 py-2 font-black text-[13px] text-slate-900 tracking-tight">{r.client_name || '—'}</TableCell>
+                    <TableCell className="px-4 py-2">
+                        <Badge className="rounded-md bg-blue-50 text-blue-700 border-blue-100 text-[9px] font-black uppercase">
+                            {r.type}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-2 text-[11px] font-bold text-slate-500">{r.period || '—'}</TableCell>
+                    <TableCell className="px-4 py-2">
+                        <div className={`flex items-center gap-1.5 text-[11px] font-bold ${isLate ? 'text-rose-600' : 'text-slate-600'}`}>
+                           <Calendar className="h-3 w-3 opacity-30" />
+                           {format(new Date(r.due_date), 'dd/MM/yyyy')}
+                        </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-2 text-center">
+                        <Badge className={`rounded px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tighter ${statusMap[r.status]?.color}`}>
+                            {statusMap[r.status]?.label}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="px-4 py-2">
+                        <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 font-mono tracking-tighter">
+                            <Hash className="h-2.5 w-2.5 opacity-30" />
+                            {r.filing_reference || 'PENDING_ACK'}
+                        </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-2 text-right">
+                       <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-7 w-7 p-0 rounded-lg"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                                <DropdownMenuItem className="text-xs font-bold" onClick={() => openEdit(r)}><Edit3 className="mr-2 h-3.5 w-3.5" /> Amend Return</DropdownMenuItem>
+                                <DropdownMenuItem className="text-xs font-bold" onClick={() => handleQuickStatus(r.id, 'filed')}><CheckCircle2 className="mr-2 h-3.5 w-3.5 text-emerald-500" /> Mark as Filed</DropdownMenuItem>
+                                <DropdownMenuItem className="text-xs font-bold"><Bell className="mr-2 h-3.5 w-3.5" /> Notify Assessee</DropdownMenuItem>
+                                <DropdownMenuItem className="text-xs font-bold text-rose-600" onClick={() => handleDelete(r.id)}><Trash2 className="mr-2 h-3.5 w-3.5" /> Purge Record</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
-        )}
-      </div>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
+      {/* Compliance Modal - Condensed */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in" onClick={() => setShowModal(false)}>
-          <div className="bg-background rounded-lg shadow-vercel-popover max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-border">
-              <span className="text-lg font-semibold tracking-vercel-card">{editRecord ? 'Edit Compliance Record' : 'Add Compliance Record'}</span>
-              <button className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 p-2 h-9 w-9 bg-transparent shadow-none hover:bg-accent hover:text-accent-foreground" onClick={() => setShowModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="p-6" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Client *</label>
-                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" required value={form.client_id || ''} onChange={e => setForm({ ...form, client_id: e.target.value })}>
-                    <option value="">Select client…</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+           <Card className="max-w-2xl w-full rounded-2xl border-none shadow-2xl relative animate-in zoom-in-95 duration-200 overflow-hidden">
+             <CardHeader className="bg-slate-50 border-b p-4 px-6">
+                <CardTitle className="text-lg font-black tracking-tight flex items-center justify-between">
+                    {editRecord ? 'Amend Statutory Filing' : 'Index New Statutory Return'}
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setShowModal(false)}>✕</Button>
+                </CardTitle>
+             </CardHeader>
+             <form onSubmit={handleSubmit}>
+                <div className="p-6 grid grid-cols-2 gap-4">
+                    <div className="col-span-2 space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Assessee / Client</label>
+                        <Select value={form.client_id || 'null'} onValueChange={val => setForm({...form, client_id: val === 'null' ? null : val})}>
+                            <SelectTrigger className="h-9 font-bold text-xs"><SelectValue placeholder="Identify Assessee" /></SelectTrigger>
+                            <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Statutory Type</label>
+                        <Select value={form.type || 'null'} onValueChange={val => setForm({...form, type: val === 'null' ? null : val})}>
+                           <SelectTrigger className="h-9 font-bold text-xs"><SelectValue /></SelectTrigger>
+                           <SelectContent>{TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Filing Periodicity</label>
+                        <Input placeholder="e.g. Q1 FY 2025-26" className="h-9 font-bold text-sm" value={form.period || ''} onChange={e => setForm({...form, period: e.target.value})} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Statutory Deadline</label>
+                        <Input type="date" className="h-9 font-bold text-xs" value={form.due_date || ''} onChange={e => setForm({...form, due_date: e.target.value})} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Current Lifecycle</label>
+                        <Select value={form.status} onValueChange={val => setForm({...form, status: val})}>
+                            <SelectTrigger className="h-9 font-bold text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{statusMap[s]?.label.toUpperCase()}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="col-span-2 space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">ACK / ARN Reference</label>
+                        <Input placeholder="Enter acknowledgement number" className="h-9 font-bold text-sm" value={form.filing_reference || ''} onChange={e => setForm({...form, filing_reference: e.target.value})} />
+                    </div>
                 </div>
-                <div className="form-group">
-                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Type *</label>
-                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" required value={form.type || ''} onChange={e => setForm({ ...form, type: e.target.value })}>
-                    <option value="">Select type</option>
-                    {TYPES.map(t => <option key={t}>{t}</option>)}
-                  </select>
+                <div className="bg-slate-50 p-4 px-6 border-t flex justify-end gap-2">
+                    <Button variant="ghost" type="button" className="h-9 text-[11px] font-black uppercase" onClick={() => setShowModal(false)}>Cancel</Button>
+                    <Button type="submit" className="h-9 px-6 bg-blue-600 text-white font-black text-[11px] uppercase tracking-wider">{editRecord ? 'Update Registry' : 'Index Return'}</Button>
                 </div>
-                <div className="form-group">
-                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Period</label>
-                  <input className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={form.period || ''} onChange={e => setForm({ ...form, period: e.target.value })} placeholder="e.g. Q1 FY2024-25" />
-                </div>
-                <div className="form-group">
-                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Due Date *</label>
-                  <input className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" type="date" required value={form.due_date || ''} onChange={e => setForm({ ...form, due_date: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Status</label>
-                  <select className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={form.status || 'pending'} onChange={e => setForm({ ...form, status: e.target.value })}>
-                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                  </select>
-                </div>
-                {editRecord && (
-                  <div className="form-group">
-                    <label className="text-sm font-medium leading-none mb-2 block text-foreground">Filing Reference</label>
-                    <input className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" value={form.filing_reference || ''} onChange={e => setForm({ ...form, filing_reference: e.target.value })} placeholder="ARN / Ack Number" />
-                  </div>
-                )}
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="text-sm font-medium leading-none mb-2 block text-foreground">Notes</label>
-                  <textarea className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" rows={2} value={form.notes || ''} onChange={e => setForm({ ...form, notes: e.target.value })} style={{ resize: 'vertical' }} />
-                </div>
-              </div>
-              <div className="flex items-center justify-end gap-2 p-6 border-t border-border bg-muted/20">
-                <button type="button" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="inline-flex items-center justify-center rounded-[6px] text-sm font-medium tracking-vercel-ui transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">{editRecord ? 'Update' : 'Add Record'}</button>
-              </div>
-            </form>
-          </div>
+             </form>
+           </Card>
         </div>
       )}
     </div>

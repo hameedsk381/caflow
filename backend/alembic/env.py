@@ -7,7 +7,12 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.db.base import Base
-from app.models import firm, user, client, compliance, task, document, invoice, notification, activity_log, lead, service, notice, register  # noqa
+from app.models import (
+    firm, user, profile, client, compliance, task, document, invoice, 
+    notification, activity_log, lead, service, notice, register,
+    vault, notification_rule, timesheet, physical_register, 
+    attendance, communication, leave
+)  # noqa
 
 config = context.config
 if config.config_file_name is not None:

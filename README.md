@@ -7,6 +7,7 @@ A production-ready, multi-tenant SaaS platform for CA firms to manage clients, c
 ## 🚀 Quick Start (Local Development)
 
 ### Prerequisites
+
 - Python 3.11+
 - Node.js 20+
 - PostgreSQL 14+
@@ -21,6 +22,7 @@ docker compose up --build
 ```
 
 Then open:
+
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000/docs
 
@@ -83,9 +85,9 @@ Frontend runs at: **http://localhost:3000**
 
 After running `python seed.py`:
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@caflow.demo | demo1234 |
+| Role     | Email             | Password |
+| -------- | ----------------- | -------- |
+| Admin    | admin@caflow.demo | demo1234 |
 | Employee | priya@caflow.demo | demo1234 |
 
 ---
@@ -135,33 +137,33 @@ New folder/
 
 ## 🏗 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 14, React 18, TypeScript |
-| Backend | FastAPI, Python 3.11 |
-| Database | PostgreSQL 16 with async SQLAlchemy |
-| Auth | JWT (access + refresh tokens) |
-| Storage | Local (dev) / AWS S3 (prod) |
-| Cache/Queue | Redis |
-| Charts | Recharts |
-| Icons | Lucide React |
-| Deployment | Docker + Docker Compose |
+| Layer       | Technology                          |
+| ----------- | ----------------------------------- |
+| Frontend    | Next.js 14, React 18, TypeScript    |
+| Backend     | FastAPI, Python 3.11                |
+| Database    | PostgreSQL 16 with async SQLAlchemy |
+| Auth        | JWT (access + refresh tokens)       |
+| Storage     | Local (dev) / AWS S3 (prod)         |
+| Cache/Queue | Redis                               |
+| Charts      | Recharts                            |
+| Icons       | Lucide React                        |
+| Deployment  | Docker + Docker Compose             |
 
 ---
 
 ## 🔌 API Endpoints
 
-| Module | Endpoint |
-|---|---|
-| Auth | POST /api/auth/register, /login, /refresh, GET /api/auth/me |
-| Clients | GET/POST /api/clients, GET/PUT/DELETE /api/clients/{id} |
-| Compliance | GET/POST /api/compliance, GET/PUT/DELETE /api/compliance/{id} |
-| Tasks | GET/POST /api/tasks, GET/PUT/DELETE /api/tasks/{id} |
-| Documents | GET /api/documents, POST /api/documents/upload |
-| Invoices | GET/POST /api/invoices, GET/PUT/DELETE /api/invoices/{id} |
-| Notifications | GET /api/notifications, PUT /api/notifications/{id}/read |
-| Team | GET /api/team, POST /api/team/invite, PUT /api/team/{id}/role |
-| Dashboard | GET /api/dashboard/stats, /upcoming-deadlines, /compliance-summary |
+| Module        | Endpoint                                                           |
+| ------------- | ------------------------------------------------------------------ |
+| Auth          | POST /api/auth/register, /login, /refresh, GET /api/auth/me        |
+| Clients       | GET/POST /api/clients, GET/PUT/DELETE /api/clients/{id}            |
+| Compliance    | GET/POST /api/compliance, GET/PUT/DELETE /api/compliance/{id}      |
+| Tasks         | GET/POST /api/tasks, GET/PUT/DELETE /api/tasks/{id}                |
+| Documents     | GET /api/documents, POST /api/documents/upload                     |
+| Invoices      | GET/POST /api/invoices, GET/PUT/DELETE /api/invoices/{id}          |
+| Notifications | GET /api/notifications, PUT /api/notifications/{id}/read           |
+| Team          | GET /api/team, POST /api/team/invite, PUT /api/team/{id}/role      |
+| Dashboard     | GET /api/dashboard/stats, /upcoming-deadlines, /compliance-summary |
 
 Full interactive docs at `/docs` (Swagger) or `/redoc`.
 
@@ -170,6 +172,7 @@ Full interactive docs at `/docs` (Swagger) or `/redoc`.
 ## 🌱 Environment Variables
 
 ### Backend (.env)
+
 ```env
 SECRET_KEY=your-secret-key-min-32-chars
 DATABASE_URL=postgresql+asyncpg://caflow:caflow123@localhost:5432/caflow
@@ -180,6 +183,7 @@ AWS_S3_BUCKET=caflow-documents
 ```
 
 ### Frontend (.env.local)
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
@@ -188,10 +192,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ## 📦 Phase Delivery Status
 
-| Phase | Status | Description |
-|---|---|---|
-| Phase 1 ✅ | Complete | Auth, Clients, Compliance, Dashboard |
-| Phase 2 ✅ | Complete | Tasks (list+kanban), Documents, Team |
-| Phase 3 ✅ | Complete | Billing, Invoicing, Analytics |
-| Phase 4 🔄 | Scaffold | AI/OCR hooks ready for integration |
-| Phase 5 🔄 | In Progress | Testing, Docker, hardening |
+| Phase      | Status      | Description                          |
+| ---------- | ----------- | ------------------------------------ |
+| Phase 1 ✅ | Complete    | Auth, Clients, Compliance, Dashboard |
+| Phase 2 ✅ | Complete    | Tasks (list+kanban), Documents, Team |
+| Phase 3 ✅ | Complete    | Billing, Invoicing, Analytics        |
+| Phase 4 🔄 | Scaffold    | AI/OCR hooks ready for integration   |
+| Phase 5 🔄 | In Progress | Testing, Docker, hardening           |

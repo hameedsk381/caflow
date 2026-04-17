@@ -85,6 +85,7 @@ export const invoicesApi = {
   create: (data: any) => api.post('/api/invoices', data),
   update: (id: string, data: any) => api.put(`/api/invoices/${id}`, data),
   delete: (id: string) => api.delete(`/api/invoices/${id}`),
+  exportTally: () => api.get('/api/invoices/export/tally'),
 }
 
 // Notifications
@@ -108,6 +109,7 @@ export const dashboardApi = {
   upcomingDeadlines: () => api.get('/api/dashboard/upcoming-deadlines'),
   complianceSummary: () => api.get('/api/dashboard/compliance-summary'),
   recentActivity: () => api.get('/api/dashboard/recent-activity'),
+  salesData: () => api.get('/api/dashboard/sales-data'),
 }
 
 // Leads
@@ -144,4 +146,56 @@ export const registersApi = {
   create: (data: any) => api.post('/api/registers', data),
   update: (id: string, data: any) => api.put(`/api/registers/${id}`, data),
   delete: (id: string) => api.delete(`/api/registers/${id}`),
+}
+
+// Timesheets
+export const timesheetsApi = {
+  list: (params?: any) => api.get('/api/timesheets', { params }),
+  myLogs: () => api.get('/api/timesheets/my-logs'),
+  create: (data: any) => api.post('/api/timesheets', data),
+  update: (id: string, data: any) => api.put(`/api/timesheets/${id}`, data),
+  delete: (id: string) => api.delete(`/api/timesheets/${id}`),
+}
+
+// Vault
+export const vaultApi = {
+  listCredentials: () => api.get('/api/vault/credentials'),
+  listCredentialsByClient: (clientId: string) => api.get(`/api/vault/credentials/client/${clientId}`),
+  revealCredential: (id: string) => api.get(`/api/vault/credentials/${id}/reveal`),
+  createCredential: (data: any) => api.post('/api/vault/credentials', data),
+  
+  listDsc: () => api.get('/api/vault/dsc'),
+  listDscByClient: (clientId: string) => api.get(`/api/vault/dsc/client/${clientId}`),
+  revealDsc: (id: string) => api.get(`/api/vault/dsc/${id}/reveal`),
+  createDsc: (data: any) => api.post('/api/vault/dsc', data),
+  deleteDsc: (id: string) => api.delete(`/api/vault/dsc/${id}`),
+  deleteCredential: (id: string) => api.delete(`/api/vault/credentials/${id}`),
+}
+
+// Physical Registers
+export const physicalRegistersApi = {
+  listDocuments: () => api.get('/api/physical-registers/documents'),
+  createDocument: (data: any) => api.post('/api/physical-registers/documents', data),
+  
+  listLicenses: () => api.get('/api/physical-registers/licenses'),
+  createLicense: (data: any) => api.post('/api/physical-registers/licenses', data),
+  deleteLicense: (id: string) => api.delete(`/api/physical-registers/licenses/${id}`),
+  deleteDocument: (id: string) => api.delete(`/api/physical-registers/documents/${id}`),
+}
+
+// Attendance
+export const attendanceApi = {
+  status: () => api.get('/api/attendance/status'),
+  checkIn: (data: any) => api.post('/api/attendance/check-in', data),
+  checkOut: (data: any) => api.post('/api/attendance/check-out', data),
+  history: () => api.get('/api/attendance/my-history'),
+  monthlyHistory: (year: number, month: number) => api.get(`/api/attendance/my-history/month?year=${year}&month=${month}`),
+}
+
+// Communication
+export const communicationApi = {
+  listTemplates: () => api.get('/api/communication/templates'),
+  createTemplate: (data: any) => api.post('/api/communication/templates', data),
+  sendMessage: (data: any) => api.post('/api/communication/send', data),
+  listLogs: () => api.get('/api/communication/logs'),
 }
