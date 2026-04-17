@@ -30,63 +30,108 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.logo}>
-          <div className={styles.logoIcon}><Zap size={20} /></div>
-          <span className={styles.logoText}>CAFlow</span>
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Decor - Brutalist Grid */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      
+      <div className="w-full max-w-[480px] z-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="h-16 w-16 rounded-none bg-blue-600 flex items-center justify-center text-white shadow-none border border-white/10 group cursor-default">
+            <Building className="h-8 w-8 group-hover:scale-110 transition-transform" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">CAFlow</h1>
+            <p className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] ml-1">New Practice Initialization</p>
+          </div>
         </div>
-        <h1 className={styles.title}>Create your firm account</h1>
-        <p className={styles.subtitle}>Start managing your CA practice in minutes</p>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="form-group">
-            <label className="text-sm font-medium leading-none mb-2 block text-foreground">Firm Name *</label>
-            <div style={{ position: 'relative' }}>
-              <Building size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input id="firm-name-input" className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" required
-                style={{ paddingLeft: 36 }}
-                value={form.firm_name} onChange={e => setForm({ ...form, firm_name: e.target.value })}
-                placeholder="e.g. Sharma & Associates" />
-            </div>
+        <div className="bg-white rounded-none p-10 space-y-8 shadow-none border-t-4 border-blue-600">
+          <div className="space-y-2 text-center border-b border-slate-100 pb-6">
+             <h2 className="text-2xl font-black text-[#0f172a] tracking-tight uppercase">Firm Registration</h2>
+             <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Establish your statutory identity in minutes</p>
           </div>
-          <div className="form-group">
-            <label className="text-sm font-medium leading-none mb-2 block text-foreground">Your Name *</label>
-            <div style={{ position: 'relative' }}>
-              <User size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input id="name-input" className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" required
-                style={{ paddingLeft: 36 }}
-                value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="Full name" />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="text-sm font-medium leading-none mb-2 block text-foreground">Work Email *</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input id="email-input" className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" type="email" required
-                style={{ paddingLeft: 36 }}
-                value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                placeholder="you@yourfirm.com" />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="text-sm font-medium leading-none mb-2 block text-foreground">Password *</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input id="password-input" className="flex h-9 w-full rounded-[6px] bg-transparent px-3 py-1 text-sm shadow-vercel transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" type="password" required minLength={8}
-                style={{ paddingLeft: 36 }}
-                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
-                placeholder="Min. 8 characters" />
-            </div>
-          </div>
-          <button id="register-btn" type="submit" className="btn btn-primary w-full" style={{ padding: '12px', fontSize: 14 }} disabled={loading}>
-            {loading ? <><div className="spinner" style={{ width: 16, height: 16 }} /> Creating account…</> : 'Create Firm Account'}
-          </button>
-        </form>
 
-        <div className={styles.footer}>
-          Already have an account? <Link href="/login" style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Sign in</Link>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Statutory Firm Name *</label>
+              <div className="relative group">
+                <Building className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                <input 
+                  required
+                  placeholder="e.g. Sharma & Associates"
+                  className="w-full h-12 bg-white border border-slate-200 rounded-none pl-12 pr-4 text-sm font-black focus:outline-none focus:border-blue-600 transition-all text-[#0f172a] placeholder:text-slate-200 uppercase"
+                  value={form.firm_name}
+                  onChange={e => setForm({ ...form, firm_name: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Practitioner Name *</label>
+                    <div className="relative group">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                        <input 
+                        required
+                        placeholder="Your Name"
+                        className="w-full h-12 bg-white border border-slate-200 rounded-none pl-12 pr-4 text-sm font-black focus:outline-none focus:border-blue-600 transition-all text-[#0f172a] placeholder:text-slate-200 uppercase"
+                        value={form.name}
+                        onChange={e => setForm({ ...form, name: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Work Email *</label>
+                    <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                        <input 
+                        type="email"
+                        required
+                        placeholder="you@firm.com"
+                        className="w-full h-12 bg-white border border-slate-200 rounded-none pl-12 pr-4 text-sm font-black focus:outline-none focus:border-blue-600 transition-all text-[#0f172a] placeholder:text-slate-200 uppercase"
+                        value={form.email}
+                        onChange={e => setForm({ ...form, email: e.target.value })}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Terminal Passphrase *</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-blue-600 transition-colors" />
+                <input 
+                  type="password" 
+                  required
+                  minLength={8}
+                  placeholder="Minimum 8 characters"
+                  className="w-full h-12 bg-white border border-slate-200 rounded-none pl-12 pr-4 text-sm font-black focus:outline-none focus:border-blue-600 transition-all text-[#0f172a] placeholder:text-slate-200"
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full h-12 bg-[#0f172a] text-white rounded-none font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-slate-800 shadow-none transition-all active:scale-[0.98] disabled:opacity-50 mt-4"
+            >
+              {loading ? 'Initializing Practice...' : 'Authorize Firm Creation'}
+              {!loading && <Zap className="h-3.5 w-3.5 fill-current" />}
+            </button>
+          </form>
+
+          <div className="text-center pt-2">
+             <Link href="/login" className="text-[10px] font-black text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest">
+                Already registered? <span className="underline underline-offset-4 text-blue-600">Enter Terminal</span>
+             </Link>
+          </div>
+        </div>
+
+        <div className="text-center">
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] opacity-50">By initializing, you agree to CAFlow's Statutory Master Service Protocols</p>
         </div>
       </div>
     </div>

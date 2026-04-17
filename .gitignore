@@ -6,7 +6,10 @@ build/
 
 # Python
 venv/
+.venv/
+venv_linux/
 env/
+.env/
 __pycache__/
 *.pyc
 .pytest_cache/
