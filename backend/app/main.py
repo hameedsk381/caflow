@@ -9,11 +9,21 @@ from app.db.database import engine
 from app.db.base import Base
 
 # Import all models so Alembic and SQLAlchemy can detect them
-from app.models import firm, user, profile, client, compliance, task, document, invoice, notification, activity_log, lead, service, notice, register, notification_rule, vault, timesheet  # noqa
+from app.models import (
+    firm, user, profile, client, compliance, task, document,
+    invoice, notification, activity_log, lead, service,
+    notice, register, notification_rule, vault, timesheet,
+    physical_register, attendance, communication, leave
+) # noqa
 
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from app.api import auth, clients, compliance as compliance_router, tasks, documents, invoices, notifications, team, dashboard, leads, services, notices, registers, billing, vault, timesheets
+from app.api import (
+    auth, clients, compliance as compliance_router, tasks, 
+    documents, invoices, notifications, team, dashboard, 
+    leads, services, notices, registers, billing, vault, 
+    timesheets, physical_registers, attendance, communication
+)
 
 from app.core.audit import register_audit_listeners
 
@@ -66,6 +76,9 @@ app.include_router(registers.router, prefix="/api/registers", tags=["Registers"]
 app.include_router(billing.router, prefix="/api/webhooks", tags=["Webhooks"])
 app.include_router(vault.router, prefix="/api/vault", tags=["Vault"])
 app.include_router(timesheets.router, prefix="/api/timesheets", tags=["Timesheets"])
+app.include_router(physical_registers.router, prefix="/api/physical-registers", tags=["Physical Registers"])
+app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
+app.include_router(communication.router, prefix="/api/communication", tags=["Communication"])
 
 
 @app.get("/", tags=["Health"])

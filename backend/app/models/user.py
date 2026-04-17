@@ -41,3 +41,5 @@ class User(Base, TimestampMixin):
     uploaded_documents = relationship("Document", back_populates="uploader", foreign_keys="Document.uploaded_by")
     activity_logs = relationship("ActivityLog", back_populates="actor", foreign_keys="ActivityLog.actor_id")
     timesheet_logs = relationship("TimesheetLog", back_populates="user", cascade="all, delete-orphan")
+    attendance_logs = relationship("AttendanceLog", back_populates="user", cascade="all, delete-orphan")
+    leave_requests = relationship("LeaveRequest", back_populates="user", foreign_keys="LeaveRequest.user_id", cascade="all, delete-orphan")
