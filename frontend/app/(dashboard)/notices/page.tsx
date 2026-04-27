@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { noticesApi, clientsApi } from '@/lib/api'
+import { noticesApi, clientsApi, documentsApi, teamApi } from '@/lib/api'
 import { 
   Plus, Search, Pencil, Trash2, Bell, FileText, 
   AlertCircle, Scale, Building2, Calendar, 
@@ -32,12 +32,13 @@ const statusMap: Record<string, { label: string, color: string }> = {
 export default function NoticesPage() {
   const [notices, setNotices] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editNotice, setEditNotice] = useState<any | null>(null)
-  const [form, setForm] = useState<any>({ status: 'open' })
+  const [form, setForm] = useState<any>({ status: 'open', priority: 'medium' })
 
   const fetchNotices = useCallback(async () => {
     setLoading(true)
@@ -55,21 +56,48 @@ export default function NoticesPage() {
   useEffect(() => { 
     fetchNotices()
     clientsApi.list({ size: 100 }).then(res => setClients(res.data.items))
+    teamApi.list().then(res => setTeamMembers(res.data.items))
   }, [fetchNotices])
 
-  const openCreate = () => { setEditNotice(null); setForm({ status: 'open' }); setShowModal(true) }
+  const openCreate = () => { setEditNotice(null); setForm({ status: 'open', priority: 'medium' }); setShowModal(true) }
   const openEdit = (n: any) => { setEditNotice(n); setForm({ ...n }); setShowModal(true) }
+
+  const [uploading, setUploading] = useState(false)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('category', 'Legal Notice')
+    if (form.client_id) formData.append('client_id', form.client_id)
+
+    try {
+      const res = await documentsApi.upload(formData)
+      setForm({ ...form, attachment_url: res.data.file_url })
+      toast.success('Document attached successfully')
+    } catch {
+      toast.error('Failed to upload document')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       if (!form.client_id) { toast.error('Assessee selection required'); return }
       
+      const payload = { ...form }
+      if (payload.assigned_to === 'null') payload.assigned_to = null
+
       if (editNotice) {
-        await noticesApi.update(editNotice.id, form)
+        await noticesApi.update(editNotice.id, payload)
         toast.success('Notice registry updated!')
       } else {
-        await noticesApi.create(form)
+        await noticesApi.create(payload)
         toast.success('New notice served & indexed!')
       }
       setShowModal(false)
@@ -88,9 +116,17 @@ export default function NoticesPage() {
     } catch { toast.error('Failed to update legal registry') }
   }
 
+  const priorityMap: Record<string, { label: string, color: string }> = {
+    low: { label: 'Low', color: 'bg-slate-100 text-slate-600' },
+    medium: { label: 'Medium', color: 'bg-blue-100 text-blue-700' },
+    high: { label: 'High', color: 'bg-amber-100 text-amber-700' },
+    urgent: { label: 'Urgent', color: 'bg-rose-100 text-rose-700 animate-pulse' }
+  }
+
   const filteredNotices = notices.filter(n => 
     (n.notice_type || '').toLowerCase().includes(search.toLowerCase()) ||
-    (n.reference_no || '').toLowerCase().includes(search.toLowerCase())
+    (n.reference_no || '').toLowerCase().includes(search.toLowerCase()) ||
+    (n.department || '').toLowerCase().includes(search.toLowerCase())
   )
 
   const overdueCount = notices.filter(n => n.status !== 'closed' && n.due_date && isPast(new Date(n.due_date))).length
@@ -101,7 +137,7 @@ export default function NoticesPage() {
       {/* Precision Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Legal Response Center</h1>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase italic">Legal Response Center</h1>
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{total} Active Departmental Notices</p>
         </div>
         
@@ -181,7 +217,7 @@ export default function NoticesPage() {
           <div className="flex items-center gap-2">
              <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <Input placeholder="Search Ref# or Type..." className="h-10 pl-8 w-[240px] text-[10px] font-bold border-slate-200 bg-white rounded-none shadow-none focus:ring-1 focus:ring-slate-900" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Input placeholder="Search Ref#, Type, or Dept..." className="h-10 pl-8 w-[280px] text-[10px] font-bold border-slate-200 bg-white rounded-none shadow-none focus:ring-1 focus:ring-slate-900" value={search} onChange={(e) => setSearch(e.target.value)} />
              </div>
              <Button variant="outline" size="sm" className="h-10 w-10 p-0 rounded-none border-slate-200 bg-white shadow-none"><Filter className="h-3.5 w-3.5" /></Button>
           </div>
@@ -196,26 +232,28 @@ export default function NoticesPage() {
                 <TableRow className="h-10 hover:bg-transparent border-none">
                     <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Notice Type & Section</TableHead>
                     <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Assessee / Client</TableHead>
-                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500 text-center">Lifecycle Status</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500 text-center">Priority & Status</TableHead>
                     <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Statutory Deadline</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Assignee</TableHead>
                     <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Identification Ref.</TableHead>
                     <TableHead className="px-4 w-10"></TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="h-24 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Synchronizing Legal Archives…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-24 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Synchronizing Legal Archives…</TableCell></TableRow>
               ) : filteredNotices.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="h-24 text-center text-xs font-bold text-slate-400 italic">No legal notices identified in current scope.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-24 text-center text-xs font-bold text-slate-400 italic">No legal notices identified in current scope.</TableCell></TableRow>
               ) : filteredNotices.map((n) => {
                 const isLate = n.status !== 'closed' && n.due_date && isPast(new Date(n.due_date))
+                const assignee = teamMembers.find(m => m.id === n.assigned_to)
                 return (
                   <TableRow key={n.id} className={`h-12 border-slate-50 border-b last:border-0 transition-colors ${isLate ? 'bg-rose-50/20 hover:bg-rose-50/40' : 'hover:bg-slate-50/50'}`}>
                     <TableCell className="px-4 py-2">
                         <div className="flex flex-col">
                            <span className="font-black text-[13px] text-[#0f172a] tracking-tight leading-tight uppercase">{n.notice_type}</span>
                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter mt-0.5 flex items-center gap-1">
-                               <ShieldAlert className="h-2.5 w-2.5" /> Dept. Notice
+                               <ShieldAlert className="h-2.5 w-2.5" /> {n.department || 'Departmental Notice'}
                            </span>
                         </div>
                     </TableCell>
@@ -225,10 +263,15 @@ export default function NoticesPage() {
                            {clients.find(c => c.id === n.client_id)?.name || 'Unknown Assessee'}
                        </div>
                     </TableCell>
-                    <TableCell className="px-4 py-2 text-center">
-                        <Badge className={`rounded-none px-1.5 py-0.5 text-[8px] font-black uppercase tracking-tighter border-none shadow-none ${statusMap[n.status]?.color}`}>
-                            {statusMap[n.status]?.label}
-                        </Badge>
+                    <TableCell className="px-4 py-2">
+                        <div className="flex flex-col items-center gap-1">
+                          <Badge className={`rounded-none px-1.5 py-0 text-[8px] font-black uppercase tracking-tighter border-none shadow-none ${priorityMap[n.priority]?.color}`}>
+                              {priorityMap[n.priority]?.label}
+                          </Badge>
+                          <Badge className={`rounded-none px-1.5 py-0 text-[8px] font-black uppercase tracking-tighter border-none shadow-none ${statusMap[n.status]?.color}`}>
+                              {statusMap[n.status]?.label}
+                          </Badge>
+                        </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
                         <div className={`flex items-center gap-1.5 text-[11px] font-black tabular-nums ${isLate ? 'text-rose-600' : 'text-slate-600'}`}>
@@ -237,9 +280,24 @@ export default function NoticesPage() {
                         </div>
                     </TableCell>
                     <TableCell className="px-4 py-2">
-                        <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 font-mono tracking-tighter tabular-nums">
-                            <Hash className="h-2.5 w-2.5 opacity-30" />
-                            {n.reference_no || 'REF_PENDING'}
+                        <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-600 uppercase">
+                           <div className="h-5 w-5 rounded-md bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-400">
+                             {assignee ? (assignee.name || 'U').charAt(0) : '?'}
+                           </div>
+                           {assignee ? (assignee.name || 'Staff') : 'Unassigned'}
+                        </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 font-mono tracking-tighter tabular-nums">
+                              <Hash className="h-2.5 w-2.5 opacity-30" />
+                              {n.reference_no || 'REF_PENDING'}
+                          </div>
+                          {n.attachment_url && (
+                            <a href={n.attachment_url} target="_blank" rel="noopener noreferrer" className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                               <FileText className="h-3 w-3" />
+                            </a>
+                          )}
                         </div>
                     </TableCell>
                     <TableCell className="px-4 py-2 text-right">
@@ -248,8 +306,8 @@ export default function NoticesPage() {
                                 <Button variant="ghost" className="h-7 w-7 p-0 rounded-none hover:bg-slate-900 hover:text-white transition-colors"><MoreVertical className="h-3.5 w-3.5" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44 rounded-none border-slate-200 shadow-none">
-                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none" onClick={() => openEdit(n)}><Edit3 className="mr-2 h-3.5 w-3.5 text-blue-600" /> Amend</DropdownMenuItem>
-                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none"><FileText className="mr-2 h-3.5 w-3.5 text-slate-500" /> Response</DropdownMenuItem>
+                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none" onClick={() => openEdit(n)}><Edit3 className="mr-2 h-3.5 w-3.5 text-blue-600" /> Amend Details</DropdownMenuItem>
+                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none"><FileText className="mr-2 h-3.5 w-3.5 text-slate-500" /> Draft Response</DropdownMenuItem>
                                 <div className="h-px bg-slate-100 my-1" />
                                 <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none text-rose-600" onClick={() => handleDelete(n.id)}><Trash2 className="mr-2 h-3.5 w-3.5" /> Purge</DropdownMenuItem>
                             </DropdownMenuContent>
@@ -265,54 +323,125 @@ export default function NoticesPage() {
 
       {/* Notice Modal - Brutalist Zero-Radius */}
       {showModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-none flex items-center justify-center p-4">
-           <Card className="max-w-2xl w-full rounded-none border border-slate-300 shadow-none relative bg-white overflow-hidden">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+           <Card className="max-w-3xl w-full rounded-none border border-slate-300 shadow-2xl relative bg-white overflow-hidden animate-in zoom-in-95 duration-200">
              <CardHeader className="bg-[#0f172a] text-white border-b border-white/10 p-4 px-6">
-                <CardTitle className="text-lg font-black tracking-tight flex items-center justify-between uppercase">
+                <CardTitle className="text-lg font-black tracking-tight flex items-center justify-between uppercase italic">
                     {editNotice ? 'Amend Legal Notice' : 'Index Departmental Notice'}
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-white hover:bg-white/10 rounded-none" onClick={() => setShowModal(false)}>✕</Button>
                 </CardTitle>
              </CardHeader>
              <form onSubmit={handleSubmit}>
-                <div className="p-8 grid grid-cols-2 gap-5">
+                <div className="p-8 grid grid-cols-2 gap-x-6 gap-y-4">
                     <div className="col-span-2 space-y-1.5 focus-within:text-blue-600 transition-colors">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Assessee / Client</label>
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Assessee / Client Selection</label>
                         <Select value={form.client_id || 'null'} onValueChange={val => setForm({...form, client_id: val === 'null' ? null : val})}>
-                            <SelectTrigger className="h-10 font-black text-xs rounded-none border-slate-200 uppercase"><SelectValue placeholder="Identify Assessee" /></SelectTrigger>
+                            <SelectTrigger className="h-11 font-black text-xs rounded-none border-slate-200 bg-slate-50/50 uppercase"><SelectValue placeholder="Identify Assessee" /></SelectTrigger>
                             <SelectContent className="rounded-none border-slate-200">{clients.map(c => <SelectItem key={c.id} value={c.id} className="rounded-none text-[10px] font-black uppercase">{c.name}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="col-span-2 space-y-1.5 focus-within:text-blue-600 transition-colors">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Notice Type / Section Number</label>
-                        <Input required placeholder="e.g. Scrutiny Notice u/s 143(3), Show Cause Notice" className="h-10 font-bold text-sm rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600 uppercase" value={form.notice_type || ''} onChange={e => setForm({...form, notice_type: e.target.value})} />
-                    </div>
+
                     <div className="space-y-1.5 focus-within:text-blue-600 transition-colors">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Reference Number / DIN</label>
-                        <Input placeholder="Ref #" className="h-10 font-bold text-sm uppercase font-mono tracking-widest rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.reference_no || ''} onChange={e => setForm({...form, reference_no: e.target.value})} />
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Department / Authority</label>
+                        <Input placeholder="e.g. Income Tax Dept, GST Council" className="h-11 font-bold text-xs rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600 uppercase" value={form.department || ''} onChange={e => setForm({...form, department: e.target.value})} />
                     </div>
+
+                    <div className="space-y-1.5 focus-within:text-blue-600 transition-colors">
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Notice Type / Section</label>
+                        <Input required placeholder="e.g. 143(3) Scrutiny" className="h-11 font-bold text-xs rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600 uppercase" value={form.notice_type || ''} onChange={e => setForm({...form, notice_type: e.target.value})} />
+                    </div>
+
+                    <div className="space-y-1.5 focus-within:text-blue-600 transition-colors">
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Reference Number / DIN</label>
+                        <Input placeholder="Ref #" className="h-11 font-bold text-xs uppercase font-mono tracking-widest rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600 bg-slate-50/50" value={form.reference_no || ''} onChange={e => setForm({...form, reference_no: e.target.value})} />
+                    </div>
+
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Lifecycle Status</label>
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Assign Responsible Staff</label>
+                        <Select value={form.assigned_to || 'null'} onValueChange={val => setForm({...form, assigned_to: val === 'null' ? null : val})}>
+                            <SelectTrigger className="h-11 font-black text-xs rounded-none border-slate-200 uppercase"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                            <SelectContent className="rounded-none border-slate-200">
+                                <SelectItem value="null" className="rounded-none text-[10px] font-black uppercase">Unassigned</SelectItem>
+                                {teamMembers.map(m => <SelectItem key={m.id} value={m.id} className="rounded-none text-[10px] font-black uppercase">{m.name || m.email}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Statutory Priority</label>
+                        <Select value={form.priority} onValueChange={val => setForm({...form, priority: val})}>
+                            <SelectTrigger className="h-11 font-black text-xs rounded-none border-slate-200 uppercase"><SelectValue /></SelectTrigger>
+                            <SelectContent className="rounded-none border-slate-200">
+                                {Object.keys(priorityMap).map(p => <SelectItem key={p} value={p} className="rounded-none text-[10px] font-black uppercase">{priorityMap[p]?.label.toUpperCase()}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Lifecycle Status</label>
                         <Select value={form.status} onValueChange={val => setForm({...form, status: val})}>
-                            <SelectTrigger className="h-10 font-black text-xs rounded-none border-slate-200 uppercase">
-                                <SelectValue />
-                            </SelectTrigger>
+                            <SelectTrigger className="h-11 font-black text-xs rounded-none border-slate-200 uppercase"><SelectValue /></SelectTrigger>
                             <SelectContent className="rounded-none border-slate-200">
                                 {Object.keys(statusMap).map(s => <SelectItem key={s} value={s} className="rounded-none text-[10px] font-black uppercase">{statusMap[s]?.label.toUpperCase()}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
+
                     <div className="space-y-1.5 focus-within:text-blue-600 transition-colors">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Issuance Date</label>
-                        <Input type="date" className="h-10 font-bold text-xs rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.issue_date?.split('T')[0] || ''} onChange={e => setForm({ ...form, issue_date: e.target.value })} />
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Issuance Date</label>
+                        <Input type="date" className="h-11 font-bold text-xs rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.issue_date?.split('T')[0] || ''} onChange={e => setForm({ ...form, issue_date: e.target.value })} />
                     </div>
+
                     <div className="space-y-1.5 focus-within:text-blue-600 transition-colors">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Response Deadline</label>
-                        <Input type="date" className="h-10 font-bold text-xs rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.due_date?.split('T')[0] || ''} onChange={e => setForm({ ...form, due_date: e.target.value })} />
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Response Deadline</label>
+                        <Input type="date" className="h-11 font-bold text-xs rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.due_date?.split('T')[0] || ''} onChange={e => setForm({ ...form, due_date: e.target.value })} />
                     </div>
+
+                    <div className="col-span-2 space-y-1.5">
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Case Document / Notice Copy</label>
+                        <div className="flex items-center gap-3">
+                          <div className="relative flex-1">
+                             <Input 
+                                type="file" 
+                                className="hidden" 
+                                id="notice-file" 
+                                onChange={handleFileUpload}
+                                disabled={uploading}
+                             />
+                             <label 
+                                htmlFor="notice-file" 
+                                className={`flex items-center justify-center gap-2 h-11 border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50/30 cursor-pointer transition-all ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                             >
+                                <Plus className="h-4 w-4 text-slate-400" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                  {uploading ? 'Uploading Archive...' : form.attachment_url ? 'Replace Document' : 'Attach Original Notice (PDF/JPG)'}
+                                </span>
+                             </label>
+                          </div>
+                          {form.attachment_url && (
+                            <div className="flex items-center gap-2 px-3 h-11 bg-emerald-50 border border-emerald-100 text-emerald-700">
+                               <CheckCircle2 className="h-4 w-4" />
+                               <span className="text-[9px] font-black uppercase tracking-widest">Attached</span>
+                            </div>
+                          )}
+                        </div>
+                    </div>
+
+                    <div className="col-span-2 space-y-1.5 focus-within:text-blue-600 transition-colors">
+                        <label className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Case Description / Specific Allegations</label>
+                        <textarea className="w-full min-h-[80px] p-3 font-bold text-xs rounded-none border border-slate-200 shadow-none focus:ring-1 focus:ring-blue-600 focus:outline-none uppercase bg-slate-50/30" placeholder="Summarize the core requirement of the notice..." value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} />
+                    </div>
+
+                    {form.status !== 'open' && (
+                      <div className="col-span-2 space-y-1.5 focus-within:text-emerald-600 transition-colors">
+                          <label className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600 ml-1">Response / Compliance Summary</label>
+                          <textarea className="w-full min-h-[80px] p-3 font-bold text-xs rounded-none border border-emerald-100 shadow-none focus:ring-1 focus:ring-emerald-600 focus:outline-none uppercase bg-emerald-50/20" placeholder="Details of response filed or compliance status..." value={form.response_summary || ''} onChange={e => setForm({...form, response_summary: e.target.value})} />
+                      </div>
+                    )}
                 </div>
                 <div className="bg-slate-50 p-6 border-t border-slate-200 flex justify-end gap-2">
-                    <Button variant="ghost" type="button" className="h-10 px-6 text-[10px] font-black uppercase tracking-widest rounded-none text-slate-500" onClick={() => setShowModal(false)}>Cancel Action</Button>
-                    <Button type="submit" className="h-10 px-8 bg-[#0f172a] text-white font-black text-[10px] uppercase tracking-widest rounded-none shadow-none hover:bg-slate-800 transition-colors">{editNotice ? 'Update Registry' : 'Index Notice'}</Button>
+                    <Button variant="ghost" type="button" className="h-11 px-6 text-[10px] font-black uppercase tracking-[0.2em] rounded-none text-slate-500" onClick={() => setShowModal(false)}>Cancel Action</Button>
+                    <Button type="submit" className="h-11 px-10 bg-[#0f172a] text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-none shadow-xl hover:bg-slate-800 transition-all active:scale-95">{editNotice ? 'Update Registry' : 'Index Notice'}</Button>
                 </div>
              </form>
            </Card>

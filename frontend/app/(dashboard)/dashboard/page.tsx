@@ -6,7 +6,7 @@ import {
   Users, ShieldCheck, AlertCircle, CheckSquare,
   TrendingUp, FileText, Clock, Activity, Calendar,
   ArrowRight, Sparkles, TrendingDown, ChevronRight,
-  Briefcase, Landmark, Zap, Scale, Layers, 
+  Briefcase, Landmark, Zap, Scale, Layers, Gavel,
   BarChart3, PieChart as PieChartIcon, Target,
   DollarSign, Percent, ArrowUpRight, ArrowDownRight,
   Terminal, Plus
@@ -130,10 +130,10 @@ export default function DashboardPage() {
         <TabsContent value="insights" className="space-y-6 mt-0 shadow-none">
           {/* Forensic High-Level Analytics */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <ForensicStatCard label="Active Assessees" value={stats?.total_clients || 30} icon={<Briefcase />} trend="+12% YoY" color="blue" />
-            <ForensicStatCard label="Certification Rate" value={`${compliance ? Math.round((compliance.filed / (compliance.total || 1)) * 100) : 88}%`} icon={<ShieldCheck />} trend="+3.2% MoM" color="emerald" />
-            <ForensicStatCard label="Live Mandates" value={stats?.open_tasks || 60} icon={<Layers />} trend="High Load" color="indigo" />
-            <ForensicStatCard label="Statutory Risk" value={stats?.overdue_compliance || 4} icon={<Scale />} trend="Action Req." color="rose" />
+            <ForensicStatCard label="Active Assessees" value={stats?.total_clients || 0} icon={<Briefcase />} trend="+12% YoY" color="blue" />
+            <ForensicStatCard label="Certification Rate" value={`${compliance ? Math.round((compliance.filed / (compliance.total || 1)) * 100) : 0}%`} icon={<ShieldCheck />} trend="+3.2% MoM" color="emerald" />
+            <ForensicStatCard label="Notices Under Scrutiny" value={stats?.overdue_notices !== undefined ? (stats.overdue_notices + (stats.open_notices || 0)) : 0} icon={<Gavel />} trend="Legal Focus" color="indigo" />
+            <ForensicStatCard label="Statutory Risk" value={(stats?.overdue_compliance || 0) + (stats?.overdue_notices || 0)} icon={<Scale />} trend="Action Req." color="rose" />
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

@@ -100,6 +100,10 @@ async def get_stats(
     overdue_notices = (await db.execute(
         select(func.count(Notice.id)).where(Notice.firm_id == firm_id, Notice.due_date < func.now(), Notice.status != "closed")
     )).scalar()
+
+    open_notices = (await db.execute(
+        select(func.count(Notice.id)).where(Notice.firm_id == firm_id, Notice.status.in_(["open", "in_progress"]))
+    )).scalar()
     
     total_registers = (await db.execute(
         select(func.count(Register.id)).where(Register.firm_id == firm_id)
@@ -131,6 +135,7 @@ async def get_stats(
         "total_leads": total_leads,
         "active_services": active_services,
         "overdue_notices": overdue_notices,
+        "open_notices": open_notices,
         "total_registers": total_registers,
         "total_sales": total_sales,
         "total_collection": total_collection,
