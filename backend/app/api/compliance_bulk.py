@@ -8,8 +8,7 @@ from app.schemas.compliance import (
     ComplianceUpdate,
     ComplianceResponse,
 )
-from app.core.auth import get_current_user
-from app.core.rbac import admin_required
+from app.core.dependencies import get_db, get_current_user, get_current_admin
 import uuid
 
 router = APIRouter(prefix="/api/compliance-bulk", tags=["Compliance Bulk"])
@@ -22,7 +21,7 @@ async def bulk_create(
     items: list[ComplianceCreate],
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
-    _: None = Depends(admin_required),
+    _: None = Depends(get_current_admin),
 ):
     """Create many compliance records in a single request (admin only)."""
     objs = [Compliance(**item.model_dump(), firm_id=user.firm_id) for item in items]
@@ -38,7 +37,7 @@ async def bulk_update(
     items: list[BulkComplianceUpdate],
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
-    _: None = Depends(admin_required),
+    _: None = Depends(get_current_admin),
 ):
     """Update many compliance records (admin only)."""
     updated = []
@@ -70,7 +69,7 @@ async def bulk_delete(
     ids: list[uuid.UUID],
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
-    _: None = Depends(admin_required),
+    _: None = Depends(get_current_admin),
 ):
     """Delete many compliance records (admin only)."""
     await db.execute(

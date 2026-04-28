@@ -44,15 +44,3 @@ def has_permission(role: str, permission: str) -> bool:
 def get_roles_with_permission(permission: str) -> List[str]:
     return [role for role, perms in ROLE_PERMISSIONS.items() if permission in perms]
 
-from fastapi import Depends, HTTPException, status
-from app.core.auth import get_current_user
-
-def admin_required(user=Depends(get_current_user)):
-    """Dependency ensuring the current user is a firm admin."""
-    # Note: user.role is an enum, so we use .value for the string lookup
-    if not has_permission(user.role.value, Permissions.MANAGE_FIRM):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required",
-        )
-    return user

@@ -3,7 +3,7 @@ from sqlalchemy import select
 from app.models.portal_sync import PortalSyncLog, SyncStatus, PortalType
 from app.models.vault import EncryptedCredential
 from app.models.compliance import Compliance, ComplianceType, ComplianceStatus
-from app.core.security import decrypt_password
+from app.core.crypto import decrypt_string
 from app.services.portals.gst import GSTScraper
 from app.services.portals.mca import MCAScraper
 from datetime import datetime
@@ -43,7 +43,7 @@ class PortalSyncEngine:
                 raise Exception(f"No credentials found in Vault for {portal_type.value}")
 
             # Decrypt password
-            password = decrypt_password(cred.encrypted_password)
+            password = decrypt_string(cred.encrypted_password)
             
             # 3. Initialize Scraper
             scraper = None

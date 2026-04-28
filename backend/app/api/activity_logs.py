@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
@@ -5,13 +6,13 @@ from sqlalchemy.orm import joinedload
 from app.db.database import get_db
 from app.models.activity_log import ActivityLog
 from app.models.user import User
-from app.core.rbac import admin_required
+from app.core.dependencies import get_db, get_current_admin
 
 router = APIRouter()
 
 @router.get("/")
 async def list_activity_logs(
-    current_user: User = Depends(admin_required),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),

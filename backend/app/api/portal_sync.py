@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.models.user import User
-from app.core.rbac import admin_required
+from app.core.dependencies import get_current_admin, get_current_staff
 from app.services.portals.engine import PortalSyncEngine
 from app.models.portal_sync import PortalType
 import uuid
@@ -15,7 +15,7 @@ async def trigger_portal_sync(
     portal_type: PortalType,
     sync_type: str,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(admin_required),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     engine = PortalSyncEngine(db)
