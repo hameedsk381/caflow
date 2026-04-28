@@ -72,7 +72,7 @@ export default function Topbar({ title, onMenuClick }: { title?: string, onMenuC
                     setNotifications(n => n.map(x => ({ ...x, is_read: true })));
                     setUnreadCount(0);
                   }}>
-                    Mark all read
+                    Mark all as read
                   </Button>
                 )}
               </div>
@@ -82,7 +82,7 @@ export default function Topbar({ title, onMenuClick }: { title?: string, onMenuC
                 ) : (
                   notifications.map((n) => (
                     <div key={n.id} className={`flex items-start gap-4 p-4 border-b last:border-b-0 transition-colors hover:bg-muted/50 ${!n.is_read ? 'bg-muted/20' : ''}`}>
-                      <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${n.type === 'warning' ? 'bg-warning' : n.type === 'reminder' ? 'bg-accent' : 'bg-primary'}`} />
+                      <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${n.type === 'warning' ? 'bg-rose-500' : n.type === 'reminder' ? 'bg-blue-500' : 'bg-slate-500'}`} />
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-medium leading-none">{n.title}</span>
                         {n.message && <span className="text-sm text-muted-foreground">{n.message}</span>}
@@ -118,12 +118,12 @@ export default function Topbar({ title, onMenuClick }: { title?: string, onMenuC
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push('/settings')} className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile & Settings</span>
+                <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign out</span>
+                <span>Logout</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

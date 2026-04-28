@@ -129,10 +129,66 @@ export interface DashboardStats {
   total_leads?: number
   active_services?: number
   overdue_notices?: number
+  open_notices?: number
   total_registers?: number
   total_sales: number
   total_collection: number
   total_outstanding: number
   expiring_dsc?: number
   expiring_licenses?: number
+}
+
+export interface DSCToken {
+  id: string
+  firm_id: string
+  client_id: string
+  holder_name: string
+  expiry_date: string
+  physical_location?: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  client_name?: string
+  pin?: string // Only when revealed
+}
+
+export interface EncryptedCredential {
+  id: string
+  firm_id: string
+  client_id: string
+  portal_name: string
+  username: string
+  notes?: string
+  created_at: string
+  updated_at: string
+  client_name?: string
+  password?: string // Only when revealed
+}
+
+export interface AttendanceLog {
+  id: string
+  user_id: string
+  firm_id: string
+  date: string
+  check_in?: string
+  check_out?: string
+  work_location_type?: string
+  notes?: string
+  is_present: boolean
+}
+
+export interface LeaveRequest {
+  id: string
+  user_id: string
+  firm_id: string
+  leave_type: 'casual' | 'sick' | 'annual' | 'compensatory' | 'wfh' | 'half_day'
+  from_date: string
+  to_date: string
+  reason?: string
+  status: 'pending' | 'approved' | 'rejected'
+  approved_by?: string
+  approved_at?: string
+  created_at: string
+  user_name?: string
+  approver_name?: string
 }

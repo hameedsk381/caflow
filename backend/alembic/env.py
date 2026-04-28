@@ -14,9 +14,17 @@ from app.models import (
     attendance, communication, leave
 )  # noqa
 
+# Load environment variables
+from app.core.config import settings
+
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Set sqlalchemy.url from environment
+db_url = settings.DATABASE_URL_SYNC
+if db_url:
+    config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = Base.metadata
 

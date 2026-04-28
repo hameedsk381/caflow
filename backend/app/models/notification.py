@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, Boolean, Text
+from sqlalchemy import Column, String, ForeignKey, Boolean, Text, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.base import Base, TimestampMixin
@@ -17,6 +17,9 @@ class Notification(Base, TimestampMixin):
     is_read = Column(Boolean, default=False)
     entity_type = Column(String(50), nullable=True)  # compliance, task, invoice
     entity_id = Column(UUID(as_uuid=True), nullable=True)
+    # New fields for scheduling and tracking send time
+    scheduled_at = Column(DateTime, nullable=True)
+    sent_at = Column(DateTime, nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="notifications")

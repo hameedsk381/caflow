@@ -23,7 +23,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
-    --radius: 0.75rem;
+    --radius: 1rem;
   }
 
   .dark {
@@ -70,6 +70,14 @@
 
   .ca-gradient-bg {
     @apply bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950;
+  }
+
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20;
+  }
+
+  .soft-shadow {
+    @apply shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300;
   }
 }
 

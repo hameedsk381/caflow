@@ -49,6 +49,7 @@ export const clientsApi = {
   create: (data: any) => api.post('/api/clients', data),
   update: (id: string, data: any) => api.put(`/api/clients/${id}`, data),
   delete: (id: string) => api.delete(`/api/clients/${id}`),
+  bulkCreate: (data: any[]) => api.post('/api/client-bulk', data),
 }
 
 // Compliance
@@ -58,6 +59,7 @@ export const complianceApi = {
   create: (data: any) => api.post('/api/compliance', data),
   update: (id: string, data: any) => api.put(`/api/compliance/${id}`, data),
   delete: (id: string) => api.delete(`/api/compliance/${id}`),
+  bulkCreate: (data: any[]) => api.post('/api/compliance-bulk', data),
 }
 
 // Tasks
@@ -93,7 +95,12 @@ export const notificationsApi = {
   list: (params?: any) => api.get('/api/notifications', { params }),
   markRead: (id: string) => api.put(`/api/notifications/${id}/read`),
   markAllRead: () => api.put('/api/notifications/read-all'),
-}
+};
+
+export const notificationPreferencesApi = {
+  get: () => api.get('/api/notification-preferences/me'),
+  update: (data: any) => api.put('/api/notification-preferences/me', data),
+};
 
 // Team
 export const teamApi = {
@@ -110,6 +117,8 @@ export const dashboardApi = {
   complianceSummary: () => api.get('/api/dashboard/compliance-summary'),
   recentActivity: () => api.get('/api/dashboard/recent-activity'),
   salesData: () => api.get('/api/dashboard/sales-data'),
+  filingTrends: () => api.get('/api/dashboard/filing-trends'),
+  growthMetrics: () => api.get('/api/dashboard/growth-metrics'),
 }
 
 // Leads
@@ -198,4 +207,25 @@ export const communicationApi = {
   createTemplate: (data: any) => api.post('/api/communication/templates', data),
   sendMessage: (data: any) => api.post('/api/communication/send', data),
   listLogs: () => api.get('/api/communication/logs'),
+}
+
+// Leave
+export const leaveApi = {
+  apply: (data: any) => api.post('/api/leave', data),
+  myRequests: () => api.get('/api/leave/my-requests'),
+  firmRequests: () => api.get('/api/leave/firm-requests'),
+  approve: (id: string, status: string) => api.post(`/api/leave/${id}/approve`, { status }),
+  delete: (id: string) => api.delete(`/api/leave/${id}`),
+}
+
+// Activity Logs
+export const activityLogsApi = {
+  list: (params: any) => api.get('/api/activity-logs', { params }),
+}
+
+// Portal Sync
+export const portalSyncApi = {
+  trigger: (clientId: string, portalType: string, syncType: string) => 
+    api.post(`/api/portal-sync/sync/${clientId}`, null, { params: { portal_type: portalType, sync_type: syncType } }),
+  getLogs: (clientId: string) => api.get(`/api/portal-sync/logs/${clientId}`),
 }

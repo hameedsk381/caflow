@@ -13,7 +13,7 @@ from app.models import (
     firm, user, profile, client, compliance, task, document,
     invoice, notification, activity_log, lead, service,
     notice, register, notification_rule, vault, timesheet,
-    physical_register, attendance, communication, leave
+    physical_register, attendance, communication, leave, portal_sync
 ) # noqa
 
 from fastapi_cache import FastAPICache
@@ -22,7 +22,9 @@ from app.api import (
     auth, clients, compliance as compliance_router, tasks, 
     documents, invoices, notifications, team, dashboard, 
     leads, services, notices, registers, billing, vault, 
-    timesheets, physical_registers, attendance, communication
+    timesheets, physical_registers, attendance, communication,
+    notification_preferences, compliance_bulk, client_bulk, leave,
+    activity_logs, portal_sync
 )
 
 from app.core.audit import register_audit_listeners
@@ -32,11 +34,18 @@ async def lifespan(app: FastAPI):
     from app.core.cache import redis_client
     FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")
     
-    # Initialize SQL Alchemy lifecycle hooks
+    from app.core.audit import register_audit_listeners
     register_audit_listeners()
-    # Database migrations should be handled by Alembic explicitly in CI/CD pipeline
-    # Removed Base.metadata.create_all anti-pattern
+    
+    from app.services.scheduler import start_scheduler
+    from app.db.database import AsyncSessionLocal
+    start_scheduler(AsyncSessionLocal)
+    
     yield
+    
+    # Shutdown scheduler on app stop
+    from app.services.scheduler import scheduler as background_scheduler
+    background_scheduler.shutdown()
 
 
 app = FastAPI(
@@ -78,7 +87,13 @@ app.include_router(vault.router, prefix="/api/vault", tags=["Vault"])
 app.include_router(timesheets.router, prefix="/api/timesheets", tags=["Timesheets"])
 app.include_router(physical_registers.router, prefix="/api/physical-registers", tags=["Physical Registers"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
+app.include_router(leave.router, prefix="/api/leave", tags=["Leave"])
 app.include_router(communication.router, prefix="/api/communication", tags=["Communication"])
+app.include_router(notification_preferences.router, prefix="/api/notification-preferences", tags=["Notification Preferences"])
+app.include_router(compliance_bulk.router, prefix="/api/compliance-bulk", tags=["Compliance Bulk"])
+app.include_router(client_bulk.router, prefix="/api/client-bulk", tags=["Client Bulk"])
+app.include_router(activity_logs.router, prefix="/api/activity-logs", tags=["Activity Logs"])
+app.include_router(portal_sync.router, prefix="/api/portal-sync", tags=["Portal Sync"])
 
 
 @app.get("/", tags=["Health"])

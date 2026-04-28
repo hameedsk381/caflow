@@ -18,6 +18,7 @@ from app.models.notice import Notice
 from app.models.register import Register
 from app.models.vault import DSCToken
 from app.models.physical_register import License
+from app.models.metrics_snapshot import MetricsSnapshot
 
 router = APIRouter()
 
@@ -27,121 +28,63 @@ def firm_key_builder(func, namespace: str = "", *, request: Request = None, resp
     return f"{namespace}:{func.__name__}:{firm_id}"
 
 @router.get("/stats")
-@cache(expire=300, key_builder=firm_key_builder)
-async def get_stats(
-    request: Request,
+async def get_dashboard_stats(
     current_user: User = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db),
 ):
     firm_id = current_user.firm_id
-
-    total_clients = (await db.execute(
-        select(func.count(Client.id)).where(Client.firm_id == firm_id, Client.status == "active")
-    )).scalar()
-
-    pending_compliance = (await db.execute(
-        select(func.count(Compliance.id)).where(
-            Compliance.firm_id == firm_id,
-            Compliance.status.in_(["pending", "in_progress"])
-        )
-    )).scalar()
-
-    overdue_compliance = (await db.execute(
-        select(func.count(Compliance.id)).where(
-            Compliance.firm_id == firm_id,
-            Compliance.due_date < date.today(),
-            Compliance.status != "filed"
-        )
-    )).scalar()
-
-    open_tasks = (await db.execute(
-        select(func.count(Task.id)).where(
-            Task.firm_id == firm_id,
-            Task.status.in_(["pending", "in_progress"])
-        )
-    )).scalar()
-
-    # Revenue Stats
-    total_rev_res = await db.execute(
-        select(func.sum(Invoice.total_amount)).where(
-            Invoice.firm_id == firm_id,
-            Invoice.status == "paid"
-        )
-    )
-    total_revenue = float(total_rev_res.scalar() or 0)
-
-    total_sales_result = await db.execute(
-        select(func.sum(Invoice.total_amount)).where(
-            Invoice.firm_id == firm_id,
-            Invoice.status != "cancelled"
-        )
-    )
-    total_sales = float(total_sales_result.scalar() or 0)
-
-    total_collection = total_revenue
-    total_outstanding = max(0, total_sales - total_collection)
-
-    # Count Stats
-    pending_invoices = (await db.execute(
-        select(func.count(Invoice.id)).where(
-            Invoice.firm_id == firm_id,
-            Invoice.status.in_(["sent", "overdue"])
-        )
-    )).scalar()
-
-    total_leads = (await db.execute(
-        select(func.count(Lead.id)).where(Lead.firm_id == firm_id)
-    )).scalar()
-
-    active_services = (await db.execute(
-        select(func.count(Service.id)).where(Service.firm_id == firm_id, Service.is_active == True)
-    )).scalar()
-
-    overdue_notices = (await db.execute(
-        select(func.count(Notice.id)).where(Notice.firm_id == firm_id, Notice.due_date < func.now(), Notice.status != "closed")
-    )).scalar()
-
-    open_notices = (await db.execute(
-        select(func.count(Notice.id)).where(Notice.firm_id == firm_id, Notice.status.in_(["open", "in_progress"]))
-    )).scalar()
     
-    total_registers = (await db.execute(
-        select(func.count(Register.id)).where(Register.firm_id == firm_id)
-    )).scalar()
-
-    expiring_dsc = (await db.execute(
-        select(func.count(DSCToken.id)).where(
-            DSCToken.firm_id == firm_id,
-            DSCToken.expiry_date <= (date.today() + timedelta(days=90)),
-            DSCToken.expiry_date >= date.today()
-        )
-    )).scalar()
-
-    expiring_licenses = (await db.execute(
-        select(func.count(License.id)).where(
-            License.firm_id == firm_id,
-            License.expiry_date <= (date.today() + timedelta(days=30)),
-            License.expiry_date >= date.today()
-        )
-    )).scalar()
+    # Counts
+    total_clients = (await db.execute(select(func.count(Client.id)).where(Client.firm_id == firm_id))).scalar() or 0
+    pending_compliance = (await db.execute(select(func.count(Compliance.id)).where(
+        Compliance.firm_id == firm_id, 
+        Compliance.status != "filed"
+    ))).scalar() or 0
+    overdue_compliance = (await db.execute(select(func.count(Compliance.id)).where(
+        Compliance.firm_id == firm_id, 
+        Compliance.status == "overdue"
+    ))).scalar() or 0
+    open_tasks = (await db.execute(select(func.count(Task.id)).where(
+        Task.firm_id == firm_id, 
+        Task.status != "completed"
+    ))).scalar() or 0
+    
+    # Revenue (Total Paid)
+    total_revenue = (await db.execute(select(func.sum(Invoice.total_amount)).where(
+        Invoice.firm_id == firm_id, 
+        Invoice.status == "paid"
+    ))).scalar() or 0
+    
+    # Outstanding
+    total_outstanding = (await db.execute(select(func.sum(Invoice.total_amount)).where(
+        Invoice.firm_id == firm_id, 
+        Invoice.status.in_(["sent", "overdue"])
+    ))).scalar() or 0
+    
+    # Registers & Vault
+    total_dsc = (await db.execute(select(func.count(DSCToken.id)).where(DSCToken.firm_id == firm_id))).scalar() or 0
+    expiring_dsc = (await db.execute(select(func.count(DSCToken.id)).where(
+        DSCToken.firm_id == firm_id,
+        DSCToken.expiry_date <= date.today() + timedelta(days=30),
+        DSCToken.expiry_date >= date.today()
+    ))).scalar() or 0
+    
+    # Notices
+    open_notices = (await db.execute(select(func.count(Notice.id)).where(
+        Notice.firm_id == firm_id,
+        Notice.status != "closed"
+    ))).scalar() or 0
 
     return {
         "total_clients": total_clients,
         "pending_compliance": pending_compliance,
         "overdue_compliance": overdue_compliance,
         "open_tasks": open_tasks,
-        "total_revenue": total_revenue,
-        "pending_invoices": pending_invoices,
-        "total_leads": total_leads,
-        "active_services": active_services,
-        "overdue_notices": overdue_notices,
-        "open_notices": open_notices,
-        "total_registers": total_registers,
-        "total_sales": total_sales,
-        "total_collection": total_collection,
-        "total_outstanding": total_outstanding,
+        "total_revenue": float(total_revenue),
+        "total_outstanding": float(total_outstanding),
+        "total_registers": total_dsc, # Simplification
         "expiring_dsc": expiring_dsc,
-        "expiring_licenses": expiring_licenses,
+        "open_notices": open_notices,
     }
 
 @router.get("/sales-data")
@@ -254,15 +197,18 @@ async def get_compliance_summary(
 
     statuses = ["pending", "in_progress", "filed", "overdue"]
     summary = {}
+    total = 0
     for s in statuses:
         count = (await db.execute(
             select(func.count(Compliance.id)).where(
                 Compliance.firm_id == firm_id,
                 Compliance.status == s
             )
-        )).scalar()
+        )).scalar() or 0
         summary[s] = count
-
+        total += count
+    
+    summary["total"] = total
     return summary
 
 
@@ -296,3 +242,70 @@ async def get_recent_activity(
         })
 
     return {"items": items}
+
+@router.get("/filing-trends")
+async def get_filing_trends(
+    current_user: User = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    firm_id = current_user.firm_id
+    today = date.today()
+    
+    trends = []
+    for i in range(5, -1, -1):
+        first_day = (today.replace(day=1) - timedelta(days=i * 28)).replace(day=1)
+        if first_day.month == 12:
+            last_day = first_day.replace(year=first_day.year + 1, month=1, day=1)
+        else:
+            last_day = first_day.replace(month=first_day.month + 1, day=1)
+            
+        filed_count = (await db.execute(
+            select(func.count(Compliance.id)).where(
+                Compliance.firm_id == firm_id,
+                Compliance.status == "filed",
+                Compliance.updated_at >= datetime.combine(first_day, datetime.min.time()),
+                Compliance.updated_at < datetime.combine(last_day, datetime.min.time())
+            )
+        )).scalar() or 0
+        
+        target_count = (await db.execute(
+            select(func.count(Compliance.id)).where(
+                Compliance.firm_id == firm_id,
+                Compliance.due_date >= first_day,
+                Compliance.due_date < last_day
+            )
+        )).scalar() or 0
+        
+        trends.append({
+            "name": first_day.strftime("%b"),
+            "filed": filed_count,
+            "target": target_count
+        })
+        
+    return trends
+
+@router.get("/growth-metrics")
+async def get_growth_metrics(
+    current_user: User = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db),
+):
+    firm_id = current_user.firm_id
+    
+    # Get last 30 snapshots for trends
+    res = await db.execute(
+        select(MetricsSnapshot)
+        .where(MetricsSnapshot.firm_id == firm_id)
+        .order_by(MetricsSnapshot.snapshot_date.asc())
+        .limit(30)
+    )
+    snapshots = res.scalars().all()
+    
+    return [
+        {
+            "date": s.snapshot_date.isoformat(),
+            "revenue": s.total_revenue,
+            "clients": s.total_clients,
+            "filing_rate": s.filing_rate,
+        }
+        for s in snapshots
+    ]

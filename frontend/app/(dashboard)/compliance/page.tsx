@@ -6,7 +6,7 @@ import {
   Plus, ShieldCheck, AlertTriangle, Search, Filter,
   MoreVertical, Edit3, Trash2, Calendar, Building2,
   CheckCircle2, Clock, FileWarning, ArrowUpRight,
-  ExternalLink, Info, Bell, Hash
+  ExternalLink, Info, Bell, Hash, Upload
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { format, isPast, isToday, differenceInDays } from 'date-fns'
@@ -22,15 +22,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import BulkUploadModal from '@/components/modals/BulkUploadModal'
 
 const TYPES = ['GST', 'ITR', 'TDS', 'ROC', 'PT', 'OTHER']
 const STATUS_OPTIONS = ['pending', 'in_progress', 'filed', 'overdue']
 
 const statusMap: Record<string, { label: string, color: string }> = {
   filed: { label: 'Filed', color: 'bg-emerald-100 text-emerald-700' },
-  in_progress: { label: 'Under Process', color: 'bg-blue-100 text-blue-700' },
+  in_progress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
   pending: { label: 'Pending', color: 'bg-slate-100 text-slate-500' },
-  overdue: { label: 'Critical Overdue', color: 'bg-rose-100 text-rose-700' }
+  overdue: { label: 'Overdue', color: 'bg-rose-100 text-rose-700' }
 }
 
 export default function CompliancePage() {
@@ -41,6 +42,7 @@ export default function CompliancePage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterType, setFilterType] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
   const [editRecord, setEditRecord] = useState<ComplianceRecord | null>(null)
   const [form, setForm] = useState<any>({})
   const [search, setSearch] = useState('')
@@ -55,7 +57,7 @@ export default function CompliancePage() {
       setRecords(cRes.data.items)
       setTotal(cRes.data.total)
       setClients(clRes.data.items)
-    } catch { toast.error('Failed to load compliance console') }
+    } catch { toast.error('Failed to load compliance data') }
     finally { setLoading(false) }
   }, [filterStatus, filterType])
 
@@ -69,33 +71,33 @@ export default function CompliancePage() {
     try {
       if (editRecord) {
         await complianceApi.update(editRecord.id, form)
-        toast.success('Compliance records updated!')
+        toast.success('Filing updated!')
       } else {
         await complianceApi.create(form)
-        toast.success('New statutory record indexed!')
+        toast.success('New filing added!')
       }
       setShowModal(false)
       fetchData()
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Filing record error')
+      toast.error(err.response?.data?.detail || 'Error saving record')
     }
   }
 
   const handleQuickStatus = async (id: string, status: string) => {
     try {
       await complianceApi.update(id, { status })
-      toast.success('Filing status updated')
+      toast.success('Status updated')
       fetchData()
-    } catch { toast.error('Failed to shift filing status') }
+    } catch { toast.error('Failed to update status') }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Formally purge this compliance record?')) return
+    if (!confirm('Are you sure you want to delete this record?')) return
     try {
       await complianceApi.delete(id)
-      toast.success('Record purged')
+      toast.success('Record deleted')
       fetchData()
-    } catch { toast.error('Failed to purge record') }
+    } catch { toast.error('Failed to delete record') }
   }
 
   const filteredRecords = records.filter(r => 
@@ -108,50 +110,53 @@ export default function CompliancePage() {
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-500">
-      {/* Precision Header */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Statutory Filing Console</h1>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{total} Compliance Records Active</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">Compliance Calendar</h1>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{total} Active Filings</p>
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase tracking-tight rounded-none shadow-none border-slate-200">Sync MCA/GST</Button>
+          <Button variant="outline" size="sm" className="h-9 px-4 text-[10px] font-black uppercase tracking-tight rounded-none shadow-none border-slate-200" onClick={() => setShowBulkModal(true)}>
+             <Upload className="h-3.5 w-3.5 mr-2" />
+             Bulk Import
+          </Button>
           <Button onClick={openCreate} className="h-9 px-4 bg-blue-600 text-white font-black text-[10px] uppercase tracking-wider rounded-none shadow-none">
             <Plus className="h-4 w-4 mr-2" />
-            Index Return
+            New Filing
           </Button>
         </div>
       </div>
 
-      {/* Critical Alerts Ribbon */}
+      {/* Alerts */}
       {(overdueCount > 0 || criticalSoon > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            {overdueCount > 0 && (
-             <div className="flex items-center gap-3 p-3 bg-rose-50 border border-rose-200 rounded-none text-rose-700 animate-pulse">
-                <FileWarning className="h-5 w-5 shrink-0" />
-                <div className="text-[10px] font-black uppercase tracking-tight">
-                   {overdueCount} Critical Overdue Filing{overdueCount > 1 ? 's' : ''} detected.
-                </div>
-             </div>
+              <div className="flex items-center gap-3 p-3 bg-rose-50 border border-rose-200 rounded-none text-rose-700 animate-pulse">
+                 <FileWarning className="h-5 w-5 shrink-0" />
+                 <div className="text-[10px] font-black uppercase tracking-tight">
+                    {overdueCount} Overdue Filing{overdueCount > 1 ? 's' : ''} detected.
+                 </div>
+              </div>
            )}
            {criticalSoon > 0 && (
-             <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-none text-amber-700">
-                <Bell className="h-5 w-5 shrink-0" />
-                <div className="text-[10px] font-black uppercase tracking-tight">
-                   {criticalSoon} Filing{criticalSoon > 1 ? 's' : ''} approaching deadline within 7 days.
-                </div>
-             </div>
+              <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-none text-amber-700">
+                 <Bell className="h-5 w-5 shrink-0" />
+                 <div className="text-[10px] font-black uppercase tracking-tight">
+                    {criticalSoon} Filing{criticalSoon > 1 ? 's' : ''} due within 7 days.
+                 </div>
+              </div>
            )}
         </div>
       )}
 
-      {/* Summary Metrics */}
+      {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-slate-200 shadow-none rounded-none overflow-hidden bg-white">
           <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Successful Filings</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Filed</p>
                     <p className="text-2xl font-black tracking-tighter text-emerald-600 tabular-nums">{records.filter(r => r.status === 'filed').length}</p>
                 </div>
                 <CheckCircle2 className="h-6 w-6 text-emerald-100" />
@@ -160,7 +165,7 @@ export default function CompliancePage() {
         <Card className="border-slate-200 shadow-none rounded-none overflow-hidden bg-white">
           <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Under Process</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">In Progress</p>
                     <p className="text-2xl font-black tracking-tighter text-blue-600 tabular-nums">{records.filter(r => r.status === 'in_progress').length}</p>
                 </div>
                 <Clock className="h-6 w-6 text-blue-100" />
@@ -169,7 +174,7 @@ export default function CompliancePage() {
         <Card className="border-slate-200 shadow-none rounded-none overflow-hidden bg-white">
           <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pending Intake</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pending</p>
                     <p className="text-2xl font-black tracking-tighter text-slate-400 tabular-nums">{records.filter(r => r.status === 'pending').length}</p>
                 </div>
                 <Info className="h-6 w-6 text-slate-100" />
@@ -178,7 +183,7 @@ export default function CompliancePage() {
         <Card className="border-[#1e293b] shadow-none rounded-none overflow-hidden bg-[#0f172a] text-white">
           <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Total Assessees</p>
+                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Clients</p>
                     <p className="text-2xl font-black tracking-tighter tabular-nums">{Array.from(new Set(records.map(r => r.client_id))).length}</p>
                 </div>
                 <Building2 className="h-6 w-6 text-blue-500/20" />
@@ -186,16 +191,16 @@ export default function CompliancePage() {
         </Card>
       </div>
 
-      {/* Filter and Table Tools */}
+      {/* Filters */}
       <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
              <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <Input placeholder="Search Assessee or ACK#..." className="h-8 pl-8 w-[240px] text-[10px] font-bold border-slate-200 bg-white rounded-none shadow-none focus:ring-1 focus:ring-slate-900" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Input placeholder="Search client or ACK..." className="h-8 pl-8 w-[240px] text-[10px] font-bold border-slate-200 bg-white rounded-none shadow-none focus:ring-1 focus:ring-slate-900" value={search} onChange={(e) => setSearch(e.target.value)} />
              </div>
              <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="h-8 w-[100px] text-[10px] font-black uppercase text-slate-600 border-slate-200 bg-white rounded-none shadow-none">
-                    <SelectValue placeholder="TYP" />
+                    <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent className="rounded-none">
                     <SelectItem value="null" className="text-[10px] font-black uppercase rounded-none">All Types</SelectItem>
@@ -204,7 +209,7 @@ export default function CompliancePage() {
              </Select>
              <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="h-8 w-[130px] text-[10px] font-black uppercase text-slate-600 border-slate-200 bg-white rounded-none shadow-none">
-                    <SelectValue placeholder="STATUS" />
+                    <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-none">
                     <SelectItem value="null" className="text-[10px] font-black uppercase rounded-none">All Status</SelectItem>
@@ -217,26 +222,26 @@ export default function CompliancePage() {
           </div>
       </div>
 
-      {/* High-Density Compliance Table */}
+      {/* Table */}
       <Card className="border-slate-200 shadow-none rounded-none overflow-hidden bg-white">
         <CardContent className="p-0">
           <Table>
             <TableHeader className="bg-slate-50 border-b border-slate-100">
                 <TableRow className="h-10 hover:bg-transparent border-none">
-                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Assessee / Client</TableHead>
-                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Return Class</TableHead>
-                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Periodicity</TableHead>
-                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Statutory Deadline</TableHead>
-                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500 text-center">Filing Status</TableHead>
-                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">ACK / ARN Reference</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Client</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Type</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Period</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">Due Date</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500 text-center">Status</TableHead>
+                    <TableHead className="px-4 font-black text-[10px] uppercase text-slate-500">ACK Number</TableHead>
                     <TableHead className="px-4 w-10"></TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={7} className="h-24 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Retrieving Statutory Calendars…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-24 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Loading...</TableCell></TableRow>
               ) : filteredRecords.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="h-24 text-center text-xs font-bold text-slate-400 italic">No compliance records detected.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-24 text-center text-xs font-bold text-slate-400 italic">No records found.</TableCell></TableRow>
               ) : filteredRecords.map((r) => {
                 const isLate = r.status !== 'filed' && isPast(new Date(r.due_date))
                 return (
@@ -262,7 +267,7 @@ export default function CompliancePage() {
                     <TableCell className="px-4 py-2">
                         <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-400 font-mono tracking-tighter tabular-nums">
                             <Hash className="h-2.5 w-2.5 opacity-30" />
-                            {r.filing_reference || 'PENDING_ACK'}
+                            {r.filing_reference || 'PENDING'}
                         </div>
                     </TableCell>
                     <TableCell className="px-4 py-2 text-right">
@@ -271,10 +276,10 @@ export default function CompliancePage() {
                                 <Button variant="ghost" className="h-7 w-7 p-0 rounded-none hover:bg-slate-900 hover:text-white transition-colors"><MoreVertical className="h-3.5 w-3.5" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44 rounded-none border-slate-200 shadow-none">
-                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none" onClick={() => openEdit(r)}><Edit3 className="mr-2 h-3.5 w-3.5" /> Amend</DropdownMenuItem>
+                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none" onClick={() => openEdit(r)}><Edit3 className="mr-2 h-3.5 w-3.5" /> Edit</DropdownMenuItem>
                                 <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none" onClick={() => handleQuickStatus(r.id, 'filed')}><CheckCircle2 className="mr-2 h-3.5 w-3.5 text-emerald-500" /> Mark Filed</DropdownMenuItem>
                                 <div className="h-px bg-slate-100 my-1" />
-                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none text-rose-600" onClick={() => handleDelete(r.id)}><Trash2 className="mr-2 h-3.5 w-3.5" /> Purge</DropdownMenuItem>
+                                <DropdownMenuItem className="text-[10px] font-black uppercase rounded-none text-rose-600" onClick={() => handleDelete(r.id)}><Trash2 className="mr-2 h-3.5 w-3.5" /> Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -286,42 +291,42 @@ export default function CompliancePage() {
         </CardContent>
       </Card>
 
-      {/* Compliance Modal - Brutalist */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-none flex items-center justify-center p-4">
            <Card className="max-w-xl w-full rounded-none border border-slate-300 shadow-none relative bg-white overflow-hidden">
              <CardHeader className="bg-[#0f172a] text-white border-b border-white/10 p-4 px-6">
                 <CardTitle className="text-lg font-black tracking-tight flex items-center justify-between uppercase">
-                    {editRecord ? 'Amend Statutory Filing' : 'Index Statutory Return'}
+                    {editRecord ? 'Edit Filing' : 'New Filing'}
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-white hover:bg-white/10 rounded-none" onClick={() => setShowModal(false)}>✕</Button>
                 </CardTitle>
              </CardHeader>
              <form onSubmit={handleSubmit}>
                 <div className="p-8 grid grid-cols-2 gap-5">
                     <div className="col-span-2 space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Assessee / Client</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Client</label>
                         <Select value={form.client_id || 'null'} onValueChange={val => setForm({...form, client_id: val === 'null' ? null : val})}>
-                            <SelectTrigger className="h-10 font-bold text-xs rounded-none border-slate-200 uppercase"><SelectValue placeholder="Identify Assessee" /></SelectTrigger>
+                            <SelectTrigger className="h-10 font-bold text-xs rounded-none border-slate-200 uppercase"><SelectValue placeholder="Select Client" /></SelectTrigger>
                             <SelectContent className="rounded-none">{clients.map(c => <SelectItem key={c.id} value={c.id} className="rounded-none uppercase">{c.name}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Statutory Type</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type</label>
                         <Select value={form.type || 'null'} onValueChange={val => setForm({...form, type: val === 'null' ? null : val})}>
                            <SelectTrigger className="h-10 font-black text-xs rounded-none border-slate-200 uppercase"><SelectValue /></SelectTrigger>
                            <SelectContent className="rounded-none">{TYPES.map(t => <SelectItem key={t} value={t} className="rounded-none uppercase">{t}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Filing Periodicity</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Period</label>
                         <Input placeholder="e.g. Q1 FY 2025-26" className="h-10 font-bold text-sm rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.period || ''} onChange={e => setForm({...form, period: e.target.value})} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Statutory Deadline</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Due Date</label>
                         <Input type="date" className="h-10 font-bold text-xs rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.due_date || ''} onChange={e => setForm({...form, due_date: e.target.value})} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Current Lifecycle</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Status</label>
                         <Select value={form.status} onValueChange={val => setForm({...form, status: val})}>
                             <SelectTrigger className="h-10 font-black text-xs rounded-none border-slate-200 uppercase">
                                 <SelectValue />
@@ -332,18 +337,26 @@ export default function CompliancePage() {
                         </Select>
                     </div>
                     <div className="col-span-2 space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">ACK / ARN Reference</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">ACK Number</label>
                         <Input placeholder="Enter acknowledgement number" className="h-10 font-black text-sm rounded-none border-slate-200 shadow-none focus-visible:ring-1 focus-visible:ring-blue-600" value={form.filing_reference || ''} onChange={e => setForm({...form, filing_reference: e.target.value})} />
                     </div>
                 </div>
                 <div className="bg-slate-50 p-6 border-t border-slate-200 flex justify-end gap-2">
                     <Button variant="ghost" type="button" className="h-10 px-6 text-[10px] font-black uppercase rounded-none" onClick={() => setShowModal(false)}>Cancel</Button>
-                    <Button type="submit" className="h-10 px-8 bg-[#0f172a] text-white font-black text-[10px] uppercase tracking-widest rounded-none shadow-none hover:bg-slate-800 transition-colors">{editRecord ? 'Update' : 'Index'}</Button>
+                    <Button type="submit" className="h-10 px-8 bg-[#0f172a] text-white font-black text-[10px] uppercase tracking-widest rounded-none shadow-none hover:bg-slate-800 transition-colors">{editRecord ? 'Update' : 'Save'}</Button>
                 </div>
              </form>
            </Card>
         </div>
       )}
+
+      <BulkUploadModal 
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onSuccess={fetchData}
+        type="compliance"
+        onUpload={(data) => complianceApi.bulkCreate(data)}
+      />
     </div>
   )
 }

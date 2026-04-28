@@ -2,6 +2,7 @@ import uuid
 from sqlalchemy import Column, String, Boolean, ForeignKey, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from app.models.notification_preference import NotificationPreference
 from app.db.base import Base, TimestampMixin
 import enum
 
@@ -35,6 +36,7 @@ class User(Base, TimestampMixin):
     client_org = relationship("Client", foreign_keys=[client_id])
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    notification_preference = relationship("NotificationPreference", back_populates="user", uselist=False)
     assigned_tasks = relationship("Task", back_populates="assignee", foreign_keys="Task.assigned_to")
     created_tasks = relationship("Task", back_populates="creator", foreign_keys="Task.created_by")
     assigned_compliance = relationship("Compliance", back_populates="assignee", foreign_keys="Compliance.assigned_to")
