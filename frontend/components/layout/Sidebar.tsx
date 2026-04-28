@@ -47,13 +47,13 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }: { isOpen
       }`}
     >
       {/* Logo Section */}
-      <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-800 px-5 bg-slate-900/50">
-        <div className="flex h-7 w-7 items-center justify-center rounded-2xl bg-blue-600 shadow-md shadow-blue-500/10 text-white">
-          <Crown className="h-4 w-4 fill-current" />
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-800 px-5 bg-slate-900/50">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-lg shadow-blue-500/20">
+          <img src="/branding/logo.png" alt="CAFlow Logo" className="h-full w-full object-cover scale-110" />
         </div>
         <div className="flex flex-col">
-            <span className="text-xs font-black tracking-tight text-white uppercase italic">CAFlow</span>
-            <span className="text-[8px] font-black text-blue-400/80 uppercase tracking-[0.2em] leading-none">Management</span>
+            <span className="text-sm font-black tracking-tighter text-white uppercase italic leading-none">CAFlow</span>
+            <span className="text-[8px] font-black text-cyan-400/80 uppercase tracking-[0.2em] leading-tight">Compliance</span>
         </div>
       </div>
 

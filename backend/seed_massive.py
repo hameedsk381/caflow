@@ -3,6 +3,7 @@ CAFlow Massive Professional Practice Seed Script
 Populates the database with dozens of high-fidelity "Chartered Accountant" demo records per module.
 """
 import asyncio
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.core.config import settings
 from app.core.security import get_password_hash
@@ -59,36 +60,44 @@ async def seed_massive():
         print("🧬 Initiating Massive Socio-Economic Practice Simulation...")
 
         # 1. ESTABLISH FIRM
-        firm = Firm(name="Sharma, Mehta & Co. Chartered Accountants", plan="enterprise", is_active=True)
-        db.add(firm)
-        await db.flush()
+        res = await db.execute(select(Firm).where(Firm.name == "Sharma, Mehta & Co. Chartered Accountants"))
+        firm = res.scalar_one_or_none()
+        if not firm:
+            firm = Firm(name="Sharma, Mehta & Co. Chartered Accountants", plan="enterprise", is_active=True)
+            db.add(firm)
+            await db.flush()
         
         # 2. PRACTITIONER FORCE
         pwd = get_password_hash("demo1234")
         partners = []
         employees = []
         
-        # Admin Partner
-        p1 = User(firm_id=firm.id, email="admin@caflow.demo", password_hash=pwd, role="firm_admin", status="active")
-        db.add(p1)
-        await db.flush()
-        db.add(Profile(user_id=p1.id, name="CA Rajesh Sharma", phone="+91-9999900001"))
-        partners.append(p1)
-
-        # Additional Partner
-        p2 = User(firm_id=firm.id, email="mehta@caflow.demo", password_hash=pwd, role="firm_admin", status="active")
-        db.add(p2)
-        await db.flush()
-        db.add(Profile(user_id=p2.id, name="CA Priya Mehta", phone="+91-9999900002"))
-        partners.append(p2)
+        # Admin Partners
+        partner_data = [
+            ("admin@caflow.demo", "CA Rajesh Sharma", "+91-9999900001"),
+            ("mehta@caflow.demo", "CA Priya Mehta", "+91-9999900002")
+        ]
+        for email, name, phone in partner_data:
+            res = await db.execute(select(User).where(User.email == email))
+            user = res.scalar_one_or_none()
+            if not user:
+                user = User(firm_id=firm.id, email=email, password_hash=pwd, role="firm_admin", status="active")
+                db.add(user)
+                await db.flush()
+                db.add(Profile(user_id=user.id, name=name, phone=phone))
+            partners.append(user)
 
         # Employees (Practitioners)
         names = ["Amit Shah", "Suresh Raina", "Anita Desai", "Rahul Dravid", "MS Dhoni", "Virat Kohli", "Jasprit Bumrah"]
         for i, name in enumerate(names):
-            user = User(firm_id=firm.id, email=f"{name.lower().replace(' ', '.')}@caflow.demo", password_hash=pwd, role="employee", status="active")
-            db.add(user)
-            await db.flush()
-            db.add(Profile(user_id=user.id, name=name, phone=f"+91-980000000{i}"))
+            email = f"{name.lower().replace(' ', '.')}@caflow.demo"
+            res = await db.execute(select(User).where(User.email == email))
+            user = res.scalar_one_or_none()
+            if not user:
+                user = User(firm_id=firm.id, email=email, password_hash=pwd, role="employee", status="active")
+                db.add(user)
+                await db.flush()
+                db.add(Profile(user_id=user.id, name=name, phone=f"+91-980000000{i}"))
             employees.append(user)
 
         # 3. ASSESSEE UNIVERSE (30 Clients)
