@@ -1,0 +1,10 @@
+/home/cognitbotz/caflow/frontend/next.config.js
+/home/cognitbotz/caflow/frontend/compact_space_aggressive.py
+/home/cognitbotz/caflow/frontend/table_script.py
+/home/cognitbotz/caflow/frontend/fix_tasks.py
+/home/cognitbotz/caflow/frontend/fix_team.py
+/home/cognitbotz/caflow/frontend/tailwind.config.ts
+/home/cognitbotz/caflow/frontend/compact_space.py
+/home/cognitbotz/caflow/frontend/jest.config.js
+/home/cognitbotz/caflow/frontend/script.py
+/home/cognitbotz/caflow/frontend/postcss.config.js

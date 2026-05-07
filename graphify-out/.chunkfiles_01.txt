@@ -1,0 +1,15 @@
+/home/cognitbotz/caflow/README.md
+/home/cognitbotz/caflow/CLAUDE.md
+/home/cognitbotz/caflow/enhancement_plan.md
+/home/cognitbotz/caflow/phase_2_implementation_plan.md
+/home/cognitbotz/caflow/docs/USER_GUIDE.md
+/home/cognitbotz/caflow/docs/superpowers/specs/2026-04-17-calendar-leaves-design.md
+/home/cognitbotz/caflow/docs/superpowers/plans/2026-04-17-calendar-leaves.md
+/home/cognitbotz/caflow/frontend/ui-skills.md
+/home/cognitbotz/caflow/Screenshot from 2026-04-17 16-55-05.png
+/home/cognitbotz/caflow/frontend/public/branding/logo.png
+/home/cognitbotz/caflow/frontend/types/index.ts
+/home/cognitbotz/caflow/frontend/tests/page.test.tsx
+/home/cognitbotz/caflow/frontend/lib/utils.ts
+/home/cognitbotz/caflow/frontend/lib/api.ts
+/home/cognitbotz/caflow/frontend/lib/auth.ts

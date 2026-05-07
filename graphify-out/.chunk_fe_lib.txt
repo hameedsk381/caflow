@@ -1,0 +1,5 @@
+/home/cognitbotz/caflow/frontend/types/index.ts
+/home/cognitbotz/caflow/frontend/tests/page.test.tsx
+/home/cognitbotz/caflow/frontend/lib/utils.ts
+/home/cognitbotz/caflow/frontend/lib/api.ts
+/home/cognitbotz/caflow/frontend/lib/auth.ts
