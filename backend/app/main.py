@@ -25,7 +25,7 @@ from app.api import (
     leads, services, notices, registers, billing, vault, 
     timesheets, physical_registers, attendance, communication,
     notification_preferences, compliance_bulk, client_bulk, leave,
-    activity_logs, portal_sync
+    activity_logs, portal_sync, admin,
 )
 
 from app.core.audit import register_audit_listeners
@@ -95,6 +95,7 @@ app.include_router(compliance_bulk.router, prefix="/api/compliance-bulk", tags=[
 app.include_router(client_bulk.router, prefix="/api/client-bulk", tags=["Client Bulk"])
 app.include_router(activity_logs.router, prefix="/api/activity-logs", tags=["Activity Logs"])
 app.include_router(portal_sync.router, prefix="/api/portal-sync", tags=["Portal Sync"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 
 
 @app.get("/", tags=["Health"])
