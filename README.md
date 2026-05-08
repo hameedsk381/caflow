@@ -54,7 +54,7 @@ copy .env.example .env
 alembic upgrade head
 
 # Seed demo data
-python seed.py
+python -m scripts.seed
 
 # Start backend server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -83,7 +83,7 @@ Frontend runs at: **http://localhost:3000**
 
 ## 🔑 Demo Credentials
 
-After running `python seed.py`:
+After running `python -m scripts.seed`:
 
 | Role     | Email             | Password |
 | -------- | ----------------- | -------- |
