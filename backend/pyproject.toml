@@ -5,7 +5,10 @@ extend-exclude = ["alembic/versions", "venv", "venv_linux", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM", "RUF"]
-ignore = ["E501"]
+ignore = [
+  "E501",
+  "UP017",  # datetime.UTC requires py311; we keep timezone.utc for py310 dev compat
+]
 
 [tool.ruff.format]
 quote-style = "double"

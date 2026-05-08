@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from functools import wraps
 from typing import Any, TypeVar
 
@@ -42,7 +42,7 @@ async def _write_log(
                 cost_paise=cost_paise,
                 request_id=request_id,
                 error_message=error_message,
-                created_at=datetime.now(UTC),
+                created_at=datetime.now(timezone.utc),
             )
         )
         await session.commit()
