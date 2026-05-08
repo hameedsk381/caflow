@@ -11,10 +11,12 @@ from starlette.requests import Request as StarletteRequest
 from app.core.limit import limiter
 from app.core.config import settings
 from app.core.logging import configure_logging
+from app.core.sentry import init_sentry
 from app.db.database import engine
 from app.db.base import Base
 
 configure_logging(level=getattr(settings, "LOG_LEVEL", "INFO"))
+init_sentry()
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
