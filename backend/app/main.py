@@ -13,7 +13,8 @@ from app.models import (
     firm, user, profile, client, compliance, task, document,
     invoice, notification, activity_log, lead, service,
     notice, register, notification_rule, vault, timesheet,
-    physical_register, attendance, communication, leave, portal_sync
+    physical_register, attendance, communication, leave, portal_sync,
+    provider_call_log,
 ) # noqa
 
 from fastapi_cache import FastAPICache
