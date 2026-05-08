@@ -17,7 +17,7 @@
 | Build vs buy | Hybrid: buy commodity integrations (GSP, MCA, OCR, WhatsApp, payments), build workflow + AI + product UX |
 | AI provider | Groq (Llama 3.3 70B / Qwen / DeepSeek) primary, Claude fallback for complex reasoning, behind a provider abstraction |
 | Mobile strategy | PWA (installable, push, offline read, geo-attendance via browser) |
-| Hosting | India region (AWS Mumbai or Azure India), shared multi-tenant by default, single-tenant DB schema per firm on paid request |
+| Hosting | Self-hosted Dokploy on a VPS (India-adjacent region for the data-residency story), shared multi-tenant by default, single-tenant DB on paid request (separate Dokploy Postgres service per firm) |
 | Current users | Pre-launch, no production users — schemas/APIs free to break |
 | Pricing target | ₹1–2k/seat/month (mainstream mid-size tier) |
 
@@ -152,7 +152,7 @@ backend/app/services/ai/
 ### 4.4 Multi-tenancy
 
 - Default: shared Postgres, row-level tenancy on `firm_id` (current model).
-- Paid tier: per-firm Postgres **schema** in same cluster, provisioned by a Terraform-driven script. Connection routing decided at request time by `firm_id → schema` map cached in Redis.
+- Paid tier: dedicated Dokploy-managed Postgres service per firm, provisioned via Dokploy's API. Connection routing decided at request time by `firm_id → connection_string` map cached in Redis.
 - Tenancy middleware audited end-to-end in Phase 4 — every query path must filter by `firm_id` or be flagged.
 
 ### 4.5 RBAC
@@ -196,7 +196,7 @@ Solo dev, ~30 focused hrs/week. Includes tests, docs, manual QA.
 | 7 | PWA polish | `frontend/` | 3w |
 | 8 | Self-serve onboarding | `frontend/app/(onboarding)/`, backend wiring | 2w |
 | 9 | Production hardening | infra + cross-cutting | 3w |
-| 10 | India hosting + tenant DB provisioning | infra | 2w |
+| 10 | Dokploy hosting + per-firm DB provisioning script | infra | 1.5w |
 | 11 | Compliance / notice / deadline UX overhaul | `frontend/app/(dashboard)/compliance/`, `notices/` | 3w |
 | 12 | Code cleanup & dead-code removal | repo-wide | 1w |
 | 13 | Client portal | `frontend/app/(portal)/`, backend scoped APIs | 3w |
@@ -231,15 +231,15 @@ This is real, not wishful. But it means Phases 4 and 5 carry the slip risk — i
 
 Week numbers are calendar weeks from kickoff. Each phase ends with a **demoable milestone** so progress is observable.
 
-### Phase 0 — Foundation (Weeks 1–3)
+### Phase 0 — Foundation (Weeks 1–3) — COMPLETE
 
 - Code audit: `portal_sync.py`, `communication.py`, scaffold modules, root scripts → delete or keep with intent.
 - Stand up `backend/app/integrations/` skeleton with `base.py` (circuit breaker, retry, cost log).
 - `provider_call_log` table + admin view.
-- Sentry, structlog, basic Loki/Grafana wired up.
-- AWS Mumbai account, Terraform skeleton for VPC + RDS + Redis + ECS/Fly.io.
+- Sentry, structlog wired up. (Loki/Grafana deferred to Phase 5.)
+- VPS + Dokploy provisioning: Postgres + Redis via Dokploy services, deploy via GitHub auto-deploy.
 - CI green: typecheck, lint, pytest, frontend tests run on every PR.
-- **Milestone:** new branch deploys cleanly to a dev environment in AWS Mumbai with telemetry.
+- **Milestone:** main deploys cleanly via Dokploy with telemetry.
 
 ### Phase 1 — GSP + MCA + Tally start (Weeks 4–10)
 
@@ -284,7 +284,7 @@ Week numbers are calendar weeks from kickoff. Each phase ends with a **demoable 
 - Compliance / notice / deadline UX overhaul: unified calendar across firm, partner dashboard, kanban for notices, SLA timers, bulk ops.
 - Client portal: firm's clients sign in (magic link), upload documents to their folder, see filing status, sign engagement letters.
 - PWA polish: installable, push notifications, offline read, geo-attendance flow.
-- Single-tenant DB provisioner (Terraform module + admin trigger).
+- Single-tenant DB provisioner (Dokploy API client + admin trigger to spin up a per-firm Postgres service).
 - Final hardening: rate limits, backup + restore drill, secrets rotation, CSP, DB pool tuning, load test at 10x expected traffic, runbook for the top 10 incidents.
 - Public landing page, pricing page, docs site, demo environment.
 - **Milestone:** v1.0 ready for paid acquisition — first three pilot mid-size firms onboarded.
@@ -368,8 +368,7 @@ The following will be addressed in their own design docs when the time comes:
 
 These do not block the spec but must be resolved before the relevant phase starts:
 
-- **Phase 0:** chosen cloud (AWS Mumbai vs Azure India) — pick on cost, free credits, support quality.
-- **Phase 0:** error tracking (Sentry self-hosted vs cloud) — likely cloud for solo simplicity.
+- **Phase 0 (resolved):** Dokploy on a self-hosted VPS, region India-adjacent (Hetzner / DO / Contabo). Sentry SaaS, not self-hosted.
 - **Phase 1:** specific GSP and MCA vendors (criteria in §7).
 - **Phase 2:** specific OCR and WhatsApp vendors.
 - **Phase 4:** legal/CA review of the GST-compliant invoice template CAFlow issues to firms.
