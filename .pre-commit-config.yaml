@@ -1,0 +1,34 @@
+exclude: |
+  (?x)^(
+    backend/venv/.*|
+    backend/venv_linux/.*|
+    backend/alembic/versions/.*|
+    backend/scripts/.*|
+    frontend/node_modules/.*|
+    frontend/.next/.*|
+    frontend/tsconfig.tsbuildinfo|
+    graphify-out/.*|
+    node_modules/.*|
+    .*\.min\.(js|css)|
+    .*\.lock|
+    bun\.lock
+  )$
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/(app/integrations|app/core/(logging|sentry)\.py)
+      - id: ruff-format
+        files: ^backend/(app/integrations|app/core/(logging|sentry)\.py)
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
