@@ -26,3 +26,6 @@ htmlcov/
 
 # Other
 *.log
+
+# tsc incremental build cache
+*.tsbuildinfo
