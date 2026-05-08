@@ -1,12 +1,34 @@
+import uuid
+
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 from app.core.limit import limiter
 from app.core.config import settings
+from app.core.logging import configure_logging
 from app.db.database import engine
 from app.db.base import Base
+
+configure_logging(level=getattr(settings, "LOG_LEVEL", "INFO"))
+
+
+class RequestIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        rid = request.headers.get("x-request-id") or str(uuid.uuid4())
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
+            request_id=rid,
+            path=request.url.path,
+            method=request.method,
+        )
+        response = await call_next(request)
+        response.headers["x-request-id"] = rid
+        return response
 
 # Import all models so Alembic and SQLAlchemy can detect them
 from app.models import (
@@ -68,6 +90,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestIdMiddleware)
 
 # Register routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
