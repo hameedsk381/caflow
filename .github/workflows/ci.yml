@@ -36,7 +36,19 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    
+
+    - name: Ruff lint (new code only — see pyproject.toml; legacy code tightened in Phase 5)
+      working-directory: ./backend
+      run: ruff check app/integrations app/core/logging.py app/core/sentry.py
+
+    - name: Ruff format check (new code only)
+      working-directory: ./backend
+      run: ruff format --check app/integrations app/core/logging.py app/core/sentry.py
+
+    - name: mypy
+      working-directory: ./backend
+      run: mypy
+
     - name: Run Pytest
       working-directory: ./backend
       env:
@@ -60,6 +72,14 @@ jobs:
     - name: Install dependencies
       working-directory: ./frontend
       run: npm ci
+
+    - name: ESLint
+      working-directory: ./frontend
+      run: npm run lint
+
+    - name: TypeScript
+      working-directory: ./frontend
+      run: npm run typecheck
 
     - name: Run Jest
       working-directory: ./frontend
