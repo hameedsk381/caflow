@@ -3,9 +3,11 @@
 NEVER apply this to write methods — re-posting an already-accepted GST
 return or invoice double-fires real-world side effects.
 """
+
 from __future__ import annotations
 
-from typing import Awaitable, Callable, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 from tenacity import (
     retry,
@@ -32,9 +34,7 @@ def retry_reads(
             reraise=True,
             stop=stop_after_attempt(max_attempts),
             wait=wait_exponential_jitter(initial=initial_wait, max=max_wait),
-            retry=retry_if_exception_type(
-                (ProviderTimeoutError, ProviderRateLimitError)
-            ),
+            retry=retry_if_exception_type((ProviderTimeoutError, ProviderRateLimitError)),
         )(fn)
 
     return deco

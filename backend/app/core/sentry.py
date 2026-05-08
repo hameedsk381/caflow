@@ -1,4 +1,5 @@
 """Sentry init helper. No-op when SENTRY_DSN env var is empty."""
+
 from __future__ import annotations
 
 import os

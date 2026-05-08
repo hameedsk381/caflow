@@ -5,12 +5,14 @@ regardless of outcome. The decorated method MAY accept ``_firm_id`` and
 ``_request_id`` kwargs which are stripped before invocation and recorded
 on the log row.
 """
+
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar
+from typing import Any, TypeVar
 
 from app.db.database import AsyncSessionLocal
 from app.models.provider_call_log import ProviderCallLog
@@ -40,7 +42,7 @@ async def _write_log(
                 cost_paise=cost_paise,
                 request_id=request_id,
                 error_message=error_message,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
         )
         await session.commit()

@@ -6,13 +6,15 @@ calls fast-fail with ``ProviderCircuitOpenError`` until the timeout elapses.
 Hand-rolled async breaker — pybreaker 1.x's ``call_async`` is tornado-based
 and not compatible with asyncio.
 """
+
 from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Awaitable, Callable, TypeVar
+from typing import TypeVar
 
 from app.integrations.base import ProviderCircuitOpenError
 
@@ -30,10 +32,9 @@ class _CircuitState:
     def is_open(self) -> bool:
         if self.opened_at is None:
             return False
-        if time.monotonic() - self.opened_at >= self.reset_timeout:
-            # half-open: let the next call through; reset on success in record_success
-            return False
-        return True
+        # If reset_timeout has elapsed, treat as half-open: let the next call through;
+        # success in record_success will reset state.
+        return time.monotonic() - self.opened_at < self.reset_timeout
 
     def record_failure(self) -> None:
         self.failures += 1
